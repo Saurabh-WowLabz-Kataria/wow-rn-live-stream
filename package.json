@@ -7,8 +7,10 @@
   "files": [
     "README.md",
     "android",
+    "assets",
     "index.js",
     "ios",
+    "src",
     "react-native-wow-rn-live-stream.podspec"
   ],
   "scripts": {
