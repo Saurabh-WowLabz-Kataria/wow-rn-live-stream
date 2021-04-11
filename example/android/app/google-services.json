@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1015801367489",
+    "project_id": "wowlivern",
+    "storage_bucket": "wowlivern.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1015801367489:android:eb3b860d09d90e86ddbd40",
+        "android_client_info": {
+          "package_name": "com.example"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1015801367489-ucf2jir6dbv7kkma7enhc0atbucsbrca.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example",
+            "certificate_hash": "3e87ab5fdf8cd4fa662d2cad7f1996ffd6877ad0"
+          }
+        },
+        {
+          "client_id": "1015801367489-nihgqp12g619nnlvkqqmha9q2feu2lg8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDT0FzLmjN2-oPp3uoBa9-izHVGO57kRXM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1015801367489-nihgqp12g619nnlvkqqmha9q2feu2lg8.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
