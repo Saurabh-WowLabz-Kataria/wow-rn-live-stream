@@ -11,5 +11,6 @@ export default {
     OK: "Ok",
     CANCEL: "Cancel",
     END: "End",
-    LEAVE: "Leave"
+    LEAVE: "Leave",
+    ASK_QUESTION: "Ask Qestion"
 }

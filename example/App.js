@@ -8,6 +8,7 @@
  * https://github.com/facebook/react-native
  */
 
+import { ModalPortal } from 'react-native-modals';
 import React, { Component } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -25,6 +26,7 @@ const App = () => {
           <Routes />
         </NavigationContainer>
       </PersistGate>
+      <ModalPortal />
     </Provider>
   );
 };

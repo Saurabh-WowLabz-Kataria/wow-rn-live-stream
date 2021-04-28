@@ -10,7 +10,11 @@ import Colors from './utils/Colors'
 import Dimens from './utils/Dimens'
 import Strings from './utils/Strings'
 import { ATTENDEE, HOST, BASE_URL, CO_HOST, INITIAL_REACTIONS } from './utils/Constants';
-import { ITEM_SEPERATOR, CHATS, TOTAL_AUDIENCE, CHAT_VISIBILITY, CALL_STATUS, SET_CALL_STATUS, REACTIONS_ROOT, ACTIVITY_MAP } from './utils/Constants';
+import {
+    ITEM_SEPERATOR, CHATS, TOTAL_AUDIENCE, CHAT_VISIBILITY,
+    CALL_STATUS, SET_CALL_STATUS, REACTIONS_ROOT, ACTIVITY_MAP, QUESTIONS
+} from './utils/Constants';
+import QuizComponent from './components/QuizComponent'
 import database from '@react-native-firebase/database';
 import { onClearData, onUpdateCount, onUpdateReactionMapper, setReactionMap } from './redux/action'
 import { connect } from 'react-redux';
@@ -27,7 +31,13 @@ class LiveStreamComp extends React.Component {
             channelId: "",
             chatlist: [],
             isChatToggleEnabled: true,
-            isChatEnable: true
+            isChatEnable: true,
+            startTime: 0,
+            ansTime: 0,
+            isVisible: false,
+            currentQuestion: null,
+            currentQuestionCount: 0,
+            questionsList: props.questionsList
         }
         this.onConferenceTerminated = this.onConferenceTerminated.bind(this);
         this.onConferenceJoined = this.onConferenceJoined.bind(this);
@@ -58,7 +68,7 @@ class LiveStreamComp extends React.Component {
             })
 
         // Listening to chat visiblity for Co-Host
-        if (this.props.user == CO_HOST) {
+        if (this.props.user == CO_HOST || this.props.user == ATTENDEE) {
             // Putting a listener for listening to co-host chat visibility Todo
             this.chatReference = database().ref(ITEM_SEPERATOR + channelId + CHAT_VISIBILITY)
                 .on('value', snapshot => {
@@ -66,7 +76,58 @@ class LiveStreamComp extends React.Component {
                         isChatEnable: snapshot.val()
                     })
                 })
+
+            this.listenToQuestions(channelId);
         }
+    }
+
+    askQuestion() {
+        const aCurrentQues = this.state.questionsList[this.state.currentQuestionCount]
+        this.setState({
+            currentQuestion: aCurrentQues,
+            currentQuestionCount: this.state.currentQuestionCount + 1,
+        }, () => {
+            if (this.state.questionsList.length > 0 && this.state.questionsList.length == this.state.currentQuestionCount) {
+                setTimeout(() => {
+                    database()
+                        .ref(ITEM_SEPERATOR + this.state.channelId + QUESTIONS)
+                        .update({
+                            currentQuestion: null
+                        })
+                }, 15000);
+            }
+        })
+
+        // Setting the current question in firebase
+        database()
+            .ref(ITEM_SEPERATOR + this.state.channelId + QUESTIONS)
+            .update({
+                currentQuestion: aCurrentQues
+            })
+    }
+
+    listenToQuestions(channelId) {
+        this.questionsRef = database()
+            .ref(ITEM_SEPERATOR + channelId + QUESTIONS + '/currentQuestion')
+            .on('value', snapshot => {
+                if (snapshot.val()) {
+                    console.log("Question value : ", snapshot.val())
+                    this.setState({
+                        currentQuestion: snapshot.val(),
+                        isVisible: true,
+                        startTime: new Date()
+                    }, () => {
+                        this.ansTimeout = setTimeout(() => {
+                            this.setState({
+                                isVisible: false,
+                                ansTime: 0
+                            }, () => {
+                                this.props.onOptionSelected(null, 0);
+                            })
+                        }, 15000);
+                    })
+                }
+            });
     }
 
     componentDidMount() {
@@ -119,6 +180,19 @@ class LiveStreamComp extends React.Component {
                 {
                     text: Strings.OK,
                     onPress: () => {
+                        if (this.props.user == HOST) {
+                            this.setState({
+                                currentQuestion: null,
+                                currentQuestionCount: 0
+                            })
+                        } else if (this.props.user == ATTENDEE) {
+                            this.setState({
+                                currentQuestion: null,
+                                ansTime: 0,
+                                startTime: 0,
+                                isVisible: false
+                            })
+                        }
                         this.props.onCallEnded();
                     }
                 },
@@ -160,7 +234,6 @@ class LiveStreamComp extends React.Component {
                 {
                     text: Strings.OK,
                     onPress: () => {
-                        JitsiMeet.endCall();
                         this.props.onClearData();
                         this.props.onCallEnded();
                     }
@@ -243,6 +316,12 @@ class LiveStreamComp extends React.Component {
                 .then(() => {
                     this.updateChatVisibility(true);
                 });
+
+            database()
+                .ref(ITEM_SEPERATOR + channelId + QUESTIONS)
+                .set({
+                    questions: this.props.questionsList
+                })
         } else if (this.props.user == ATTENDEE) {
             /** Putting a listener on call status(Used when the host ends the live stream)
              *  and navigating properly after the call has ended.
@@ -253,6 +332,10 @@ class LiveStreamComp extends React.Component {
                 .on('value', snapshot => {
                     if (!snapshot.val()) {
                         // Live Stream has ended 
+                        JitsiMeet.endCall();
+                        this.setState({
+                            callJoined: false
+                        })
                         this.goBack();
                     } else {
                         // Increment the total live audience counter
@@ -276,6 +359,16 @@ class LiveStreamComp extends React.Component {
     onMsgUpdated(value) {
         this.setState({
             msg: value
+        })
+    }
+
+    onOptionSelected(value) {
+        clearTimeout(this.ansTimeout);
+        this.setState({
+            isVisible: false,
+            ansTime: new Date() - this.state.startTime
+        }, () => {
+            this.props.onOptionSelected(value, this.state.ansTime);
         })
     }
 
@@ -329,10 +422,14 @@ class LiveStreamComp extends React.Component {
         // Removing listener for the viewer's count
         database().ref(ITEM_SEPERATOR + this.state.channelId + TOTAL_AUDIENCE)
             .off('value', this.countReference);
-        if (this.props.user == CO_HOST) {
+        if (this.props.user == CO_HOST || this.props.user == ATTENDEE) {
             // Removing listener for the co-host chat visibility
             database().ref(ITEM_SEPERATOR + this.state.channelId + CHAT_VISIBILITY)
                 .off('value', this.chatReference);
+
+            database().ref(ITEM_SEPERATOR + this.state.channelId + QUESTIONS + '/currentQuestion')
+                .off('value', this.currentQuestion);
+
         }
     }
 
@@ -456,7 +553,7 @@ class LiveStreamComp extends React.Component {
 
     render() {
         const { user } = this.props;
-        const { callJoined, isChatToggleEnabled, isChatEnable } = this.state;
+        const { callJoined, isChatToggleEnabled, isChatEnable, questionsList, currentQuestion, currentQuestionCount, isVisible } = this.state;
         return (
             <View style={{ backgroundColor: 'black', flex: 1, width: '100%', height: '100%' }}>
                 <JitsiMeetView
@@ -469,7 +566,7 @@ class LiveStreamComp extends React.Component {
                     <View style={Styles.chatRoot}>
                         <MaskedView element={<MaskedElement />}>
                             <View style={Styles.listRoot}>
-                                {user == CO_HOST && !isChatEnable ?
+                                {(user == CO_HOST || user == ATTENDEE) && !isChatEnable ?
                                     null :
                                     <FlatList
                                         data={this.state.chatlist}
@@ -484,7 +581,7 @@ class LiveStreamComp extends React.Component {
 
                         </MaskedView>
                         {
-                            user == ATTENDEE ?
+                            user == ATTENDEE && isChatEnable ?
                                 <KeyboardAvoidingView style={Styles.bottomRoot}>
                                     <TextInput
                                         style={Styles.msgRoot}
@@ -546,16 +643,39 @@ class LiveStreamComp extends React.Component {
                     : null
                 }
                 {user == HOST && callJoined ?
-                    <Switch
-                        trackColor={{ false: Colors.TOGGLE_BACKGROUND_TRACK, true: Colors.TOGGLE_BACKGROUND_TRACK }}
-                        thumbColor={isChatToggleEnabled ? Colors.RED : Colors.THUMB_COLOR_DISABLED}
-                        ios_backgroundColor={Colors.TOGGLE_BACKGROUND_TRACK}
-                        onValueChange={this.toggleSwitch}
-                        value={isChatToggleEnabled}
-                        style={Styles.chatToggleStyle}
-                    />
+                    <View
+                        style={Styles.chatToggleStyle}>
+                        <Switch
+                            trackColor={{ false: Colors.TOGGLE_BACKGROUND_TRACK, true: Colors.TOGGLE_BACKGROUND_TRACK }}
+                            thumbColor={isChatToggleEnabled ? Colors.RED : Colors.THUMB_COLOR_DISABLED}
+                            ios_backgroundColor={Colors.TOGGLE_BACKGROUND_TRACK}
+                            onValueChange={this.toggleSwitch}
+                            value={isChatToggleEnabled}
+                        />
+                        {
+                            user == HOST && questionsList.length > 0 && questionsList.length > currentQuestionCount ?
+                                <Pressable
+                                    onPress={this.askQuestion.bind(this)}
+                                    style={Styles.askQuestionStyle}>
+                                    <Text
+                                        style={Styles.endBtnTextStyle}>
+                                        {Strings.ASK_QUESTION}
+                                    </Text>
+                                </Pressable>
+                                : null
+                        }
+                    </View>
                     : null
                 }
+                {
+                    user == ATTENDEE ?
+                        <QuizComponent
+                            isVisible={isVisible}
+                            question={currentQuestion}
+                            optionSelected={this.onOptionSelected.bind(this)} />
+                        : null
+                }
+
             </View>
         );
     }
@@ -630,6 +750,13 @@ const Styles = StyleSheet.create({
         right: Dimens.dimen_0,
         top: Dimens.dimen_0,
         margin: Dimens.dimen_24,
+        paddingHorizontal: Dimens.dimen_12,
+        paddingVertical: Dimens.dimen_6,
+    },
+    askQuestionStyle: {
+        backgroundColor: Colors.RED,
+        borderRadius: Dimens.dimen_4,
+        marginVertical: Dimens.dimen_4,
         paddingHorizontal: Dimens.dimen_12,
         paddingVertical: Dimens.dimen_6,
     },

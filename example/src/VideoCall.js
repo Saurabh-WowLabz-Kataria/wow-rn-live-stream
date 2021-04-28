@@ -7,16 +7,59 @@ import {
     Animated
 } from "react-native";
 import { LiveStreamComp } from 'react-native-wow-rn-live-stream';
+import { HOST, BASE_URL, QUESTIONS, ITEM_SEPERATOR } from 'react-native-wow-rn-live-stream';
+import database from '@react-native-firebase/database';
 
 class VideoCall extends Component {
 
     constructor(props) {
         super(props);
-
+        this.state = {
+            sampleQuestions: [
+                {
+                    title: 'First Question',
+                    options: [
+                        'First Options',
+                        'Second Options',
+                        'Third Option',
+                        'Fourth Option'
+                    ]
+                },
+                {
+                    title: 'Second Question',
+                    options: [
+                        'First Options',
+                        'Second Options',
+                        'Third Option']
+                },
+                {
+                    title: 'Third Question',
+                    options: [
+                        'First Options',
+                        'Second Options',
+                        'Third Option',
+                        'Fourth Option'
+                    ]
+                },
+                {
+                    title: 'Fourth Question',
+                    options: [
+                        'First Options',
+                        'Second Options'
+                    ]
+                }
+            ]
+        }
     }
 
     onCallEnded() {
         this.props.navigation.goBack();
+    }
+
+    onOptionSelected(value, ansTime) {
+        console.log("Selected Value : ", value)
+        console.log("Ans time : ", ansTime)
+        // do something
     }
 
     render() {
@@ -28,7 +71,10 @@ class VideoCall extends Component {
                     userName={this.props.route.params.userName}
                     email={this.props.route.params.email}
                     userImageUrl={this.props.route.params.userImageUrl}
-                    onCallEnded={this.onCallEnded.bind(this)} />
+                    onCallEnded={this.onCallEnded.bind(this)}
+                    questionsList={this.state.sampleQuestions}
+                    onOptionSelected={this.onOptionSelected.bind(this)} />
+
             </View>
         )
     }

@@ -40,3 +40,7 @@ local.properties
 buck-out/
 \.buckd/
 *.keystore
+
+# Firebase files
+example/android/app/google-services.json
+example/ios/app/GoogleService-Info.plist

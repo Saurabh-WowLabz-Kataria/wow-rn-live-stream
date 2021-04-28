@@ -4,6 +4,7 @@
  */
 export default {
     dimen_0: 0,
+    dimen_1: 1,
     dimen_2: 2,
     dimen_4: 4,
     dimen_6: 6,
@@ -17,5 +18,7 @@ export default {
     dimen_42: 42,
     dimen_64: 64,
 
-    font_14: 14
+    font_14: 14,
+    font_16: 16,
+    font_18: 18
 }

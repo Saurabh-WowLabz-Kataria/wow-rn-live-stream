@@ -13,6 +13,7 @@ export const CALL_STATUS = "/callStatus/isActive";
 export const SET_CALL_STATUS = "/callStatus";
 export const REACTIONS_ROOT = "/reactions";
 export const ACTIVITY_MAP = "/activityMap";
+export const QUESTIONS = "/questions";
 
 export var BASE_URL = "https://meet.jit.si/";
 export var INITIAL_REACTIONS = {

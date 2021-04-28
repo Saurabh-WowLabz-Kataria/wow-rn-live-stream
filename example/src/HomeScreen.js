@@ -6,7 +6,7 @@ import {
     StyleSheet,
     Animated
 } from "react-native";
-import { HOST, ATTENDEE, setBaseUrl } from 'react-native-wow-rn-live-stream';
+import { HOST, ATTENDEE, setBaseUrl, QuizComponent } from 'react-native-wow-rn-live-stream';
 
 class HomeScreen extends Component {
 
@@ -14,7 +14,27 @@ class HomeScreen extends Component {
         super(props);
         this.child = React.createRef();
         this.state = {
-            animation: new Animated.Value(1)
+            animation: new Animated.Value(1),
+            isVisible: true,
+            title: "Question",
+            optionsList: [
+                {
+                    option: "First Option",
+                    id: "1"
+                },
+                {
+                    option: "Second Option",
+                    id: "2"
+                },
+                {
+                    option: "Third Option",
+                    id: "3"
+                },
+                {
+                    option: "Fourth Option",
+                    id: "4"
+                },
+            ]
         }
     }
 
@@ -42,6 +62,12 @@ class HomeScreen extends Component {
         });
     }
 
+    onOptionSelected() {
+        this.setState({
+            isVisible: false
+        })
+    }
+
     render() {
         return (
             <View style={Styles.root}>
@@ -57,6 +83,11 @@ class HomeScreen extends Component {
                         Join Video Conferrencing
                     </Text>
                 </TouchableOpacity>
+                {/* <QuizComponent
+                    isVisible={this.state.isVisible}
+                    optionsList={this.state.optionsList}
+                    title={this.state.title}
+                    optionSelected={this.onOptionSelected.bind(this)} /> */}
             </View>
         )
     }
