@@ -53,13 +53,14 @@ class HomeScreen extends Component {
     }
 
     onJoinVideoConferrencing() {
-        this.props.navigation.navigate('VideoCall', {
-            url: 'https://meet.jit.si/somechanellWowishh',
-            user: ATTENDEE,
-            userName: 'Sample User',
-            email: 'example@email.com',
-            userImageUrl: 'https://picsum.photos/100'
-        });
+        // this.props.navigation.navigate('VideoCall', {
+        //     url: 'https://meet.jit.si/somechanellWowishh',
+        //     user: ATTENDEE,
+        //     userName: 'Sample User',
+        //     email: 'example@email.com',
+        //     userImageUrl: 'https://picsum.photos/100'
+        // });
+        this.props.navigation.navigate('ActiveSessions');
     }
 
     onOptionSelected() {

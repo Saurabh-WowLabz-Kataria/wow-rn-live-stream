@@ -11,7 +11,7 @@ import Dimens from './utils/Dimens'
 import Strings from './utils/Strings'
 import { ATTENDEE, HOST, BASE_URL, CO_HOST, INITIAL_REACTIONS } from './utils/Constants';
 import {
-    ITEM_SEPERATOR, CHATS, TOTAL_AUDIENCE, CHAT_VISIBILITY,
+    ITEM_SEPERATOR, CHATS, TOTAL_AUDIENCE, CHAT_VISIBILITY, CHATS_COUNT, ACTIVE_ROOMS_LIST,
     CALL_STATUS, SET_CALL_STATUS, REACTIONS_ROOT, ACTIVITY_MAP, QUESTIONS
 } from './utils/Constants';
 import QuizComponent from './components/QuizComponent'
@@ -30,6 +30,7 @@ class LiveStreamComp extends React.Component {
             callJoined: false,
             channelId: "",
             chatlist: [],
+            totalComments: 0,
             isChatToggleEnabled: true,
             isChatEnable: true,
             startTime: 0,
@@ -37,7 +38,8 @@ class LiveStreamComp extends React.Component {
             isVisible: false,
             currentQuestion: null,
             currentQuestionCount: 0,
-            questionsList: props.questionsList
+            questionsList: props.questionsList,
+            currentRoomKey: ''
         }
         this.onConferenceTerminated = this.onConferenceTerminated.bind(this);
         this.onConferenceJoined = this.onConferenceJoined.bind(this);
@@ -58,6 +60,13 @@ class LiveStreamComp extends React.Component {
                 chatlist.push(data);
                 this.setState({
                     chatlist
+                })
+            })
+
+        this.commentsCountRef = database().ref(ITEM_SEPERATOR + channelId + CHATS_COUNT)
+            .on('value', snapshot => {
+                this.setState({
+                    totalComments: snapshot.val() ? snapshot.val() : 0
                 })
             })
 
@@ -147,7 +156,7 @@ class LiveStreamComp extends React.Component {
         clearTimeout(this.starListener);
         this.starListener = null;
         this.removeFirebaseListeners();
-        this.updateFirebase();
+        this.updateFirebase(this.state.currentRoomKey);
         this.jitsiErrorFixReverse();
     }
 
@@ -317,6 +326,15 @@ class LiveStreamComp extends React.Component {
                     this.updateChatVisibility(true);
                 });
 
+            const callStatusReference = database().ref(ITEM_SEPERATOR + ACTIVE_ROOMS_LIST).push();
+            this.setState({
+                currentRoomKey: callStatusReference.key
+            })
+            console.log("Current Key :", callStatusReference.key);
+            callStatusReference.set({
+                roomName: channelId
+            })
+
             database()
                 .ref(ITEM_SEPERATOR + channelId + QUESTIONS)
                 .set({
@@ -402,6 +420,13 @@ class LiveStreamComp extends React.Component {
                         msg: ""
                     })
                 });
+            const countReference = database().ref(ITEM_SEPERATOR + this.state.channelId + CHATS_COUNT)
+                .transaction(totalComments => {
+                    if (totalComments === null) return 1;
+                    return totalComments + 1;
+                })
+                .then(transaction => { });
+
         }
     }
 
@@ -419,6 +444,9 @@ class LiveStreamComp extends React.Component {
         // Removing listener for chats
         database().ref(ITEM_SEPERATOR + this.state.channelId + CHATS)
             .off('child_added', this.dbReference);
+        // Removing listener for chat count
+        database().ref(ITEM_SEPERATOR + this.state.channelId + CHATS_COUNT)
+            .off('child_added', this.commentsCountRef);
         // Removing listener for the viewer's count
         database().ref(ITEM_SEPERATOR + this.state.channelId + TOTAL_AUDIENCE)
             .off('value', this.countReference);
@@ -507,7 +535,7 @@ class LiveStreamComp extends React.Component {
     * the {@link ATTENDEE} has left the live stream
     * 
     */
-    updateFirebase() {
+    updateFirebase(currentRoomKey) {
         JitsiMeet.endCall();
         if (this.props.user == HOST) {
             const newReference = database().ref(ITEM_SEPERATOR + this.state.channelId + SET_CALL_STATUS);
@@ -523,6 +551,10 @@ class LiveStreamComp extends React.Component {
                         })
                 });
 
+            database().ref(ITEM_SEPERATOR + ACTIVE_ROOMS_LIST + ITEM_SEPERATOR + currentRoomKey)
+                .set({
+                    roomName: null
+                })
         } else if (this.props.user == ATTENDEE) {
             if (this.state.channelId != null && this.state.channelId.length > 0) {
                 this.updateLiveAudienceCount(false);
@@ -553,7 +585,8 @@ class LiveStreamComp extends React.Component {
 
     render() {
         const { user } = this.props;
-        const { callJoined, isChatToggleEnabled, isChatEnable, questionsList, currentQuestion, currentQuestionCount, isVisible } = this.state;
+        const { callJoined, isChatToggleEnabled, isChatEnable, questionsList, totalComments,
+            currentQuestion, currentQuestionCount, isVisible } = this.state;
         return (
             <View style={{ backgroundColor: 'black', flex: 1, width: '100%', height: '100%' }}>
                 <JitsiMeetView
@@ -580,6 +613,24 @@ class LiveStreamComp extends React.Component {
                             </View>
 
                         </MaskedView>
+                        {
+                            user == HOST ?
+                                <View>
+                                    <Text
+                                        style={Styles.commentsCountRoot}>
+                                        {totalComments} Comments
+                                </Text>
+                                    <Pressable
+                                        onPress={this.endCall}
+                                        style={Styles.endBtnStyle}>
+                                        <Text
+                                            style={Styles.endBtnTextStyle}>
+                                            {Strings.END}
+                                        </Text>
+                                    </Pressable>
+                                </View>
+                                : null
+                        }
                         {
                             user == ATTENDEE && isChatEnable ?
                                 <KeyboardAvoidingView style={Styles.bottomRoot}>
@@ -609,18 +660,7 @@ class LiveStreamComp extends React.Component {
                                 </KeyboardAvoidingView>
                                 : null
                         }
-                        {
-                            user == HOST ?
-                                <Pressable
-                                    onPress={this.endCall}
-                                    style={Styles.endBtnStyle}>
-                                    <Text
-                                        style={Styles.endBtnTextStyle}>
-                                        {Strings.END}
-                                    </Text>
-                                </Pressable>
-                                : null
-                        }
+
                     </View>
                     : null
                 }
@@ -727,6 +767,15 @@ const Styles = StyleSheet.create({
         borderRadius: Dimens.dimen_16,
         borderWidth: Dimens.dimen_2,
         flex: 1,
+        borderColor: Colors.WHITE,
+        color: Colors.WHITE,
+    },
+    commentsCountRoot: {
+        paddingHorizontal: Dimens.dimen_16,
+        paddingVertical: Dimens.dimen_4,
+        marginHorizontal: Dimens.dimen_16,
+        borderRadius: Dimens.dimen_16,
+        borderWidth: Dimens.dimen_2,
         borderColor: Colors.WHITE,
         color: Colors.WHITE,
     },
