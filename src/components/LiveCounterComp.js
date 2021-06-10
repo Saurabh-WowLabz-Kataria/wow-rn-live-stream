@@ -31,12 +31,12 @@ const Styles = StyleSheet.create({
     },
     liveCounter: {
         flexShrink: 1,
-        fontSize: Dimens.font_16,
-        color: Colors.BLACK,
+        fontSize: Dimens.font_12,
+        color: Colors.WHITE,
         paddingHorizontal: Dimens.dimen_16,
         paddingVertical: Dimens.dimen_4,
-        borderRadius: Dimens.dimen_8,
-        backgroundColor: Colors.GREY
+        borderRadius: Dimens.dimen_16,
+        backgroundColor: Colors.APP_BLUE
     }
 })
 export default LiveCounterComp;
