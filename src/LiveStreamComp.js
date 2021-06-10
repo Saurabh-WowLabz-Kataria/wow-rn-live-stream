@@ -1,23 +1,30 @@
 import React from 'react';
-import { Alert, Switch, FlatList, StyleSheet, Dimensions, KeyboardAvoidingView } from 'react-native';
-import { View, StatusBar, BackHandler, Pressable, TextInput, Image, Text } from 'react-native';
+import { Alert, StyleSheet, Dimensions, KeyboardAvoidingView, FlatList, Pressable } from 'react-native';
+import { View, StatusBar, BackHandler, TextInput, Image, Text } from 'react-native';
 import JitsiMeet, { JitsiMeetView } from 'react-native-jitsi-meet';
-import MaskedElement from './components/MaskedElement';
-import MaskedView from './components/MaskedView';
 import MessageComp from "./components/MessageComp";
 import LiveCounterComp from './components/LiveCounterComp';
 import Colors from './utils/Colors'
 import Dimens from './utils/Dimens'
 import Strings from './utils/Strings'
-import { ATTENDEE, HOST, BASE_URL, CO_HOST, INITIAL_REACTIONS } from './utils/Constants';
+import { ATTENDEE, HOST, BASE_URL, CO_HOST, NORMAL, PREMIUM, EMOTICONS } from './utils/Constants';
 import {
-    ITEM_SEPERATOR, CHATS, TOTAL_AUDIENCE, CHAT_VISIBILITY, CHATS_COUNT, ACTIVE_ROOMS_LIST,
-    CALL_STATUS, SET_CALL_STATUS, REACTIONS_ROOT, ACTIVITY_MAP, QUESTIONS
+    ITEM_SEPERATOR, CHATS, TOTAL_AUDIENCE, CHAT_VISIBILITY, CHATS_COUNT, ACTIVE_ROOMS_LIST, AUDIO_STATUS, VIDEO_STATUS, DEFAULT_EMOTICON_ARRAY,
+    CALL_STATUS, SET_CALL_STATUS, REACTIONS_ROOT, ACTIVITY_MAP, QUESTIONS, SELECTED_EMOJI_ARRAY, HOST_UID, CO_HOST_UID, EMOTICONS_STATUS
 } from './utils/Constants';
 import QuizComponent from './components/QuizComponent'
+import ButtonComp from './components/ButtonComp'
 import database from '@react-native-firebase/database';
 import { onClearData, onUpdateCount, onUpdateReactionMapper, setReactionMap } from './redux/action'
 import { connect } from 'react-redux';
+// import RtcEngine, { ChannelProfile, ClientRole, RtcLocalView, RtcRemoteView } from "react-native-agora";
+import ToolbarComp from './components/ToolbarComp';
+import HostOptionsComp from './components/HostOptionsComp';
+import UserInteractionBottomComp from './components/UserInteractionBottomComp';
+import PollList from './components/PollList';
+import ImageTextComp from './components/ImageTextComp';
+import WinnersComp from './components/WinnersComp';
+import AnimatedEmoticonsComp from './components/AnimatedEmoticonsComp';
 
 const windowWidth = Dimensions.get('window').width;
 const windowHeight = Dimensions.get('window').height;
@@ -32,14 +39,46 @@ class LiveStreamComp extends React.Component {
             chatlist: [],
             totalComments: 0,
             isChatToggleEnabled: true,
+            isReactionsEnabled: false,
+            reactionsArr: [],
             isChatEnable: true,
             startTime: 0,
             ansTime: 0,
-            isVisible: false,
+            isQuesVisible: false,
+            isWinnersListVisible: false,
             currentQuestion: null,
-            currentQuestionCount: 0,
             questionsList: props.questionsList,
-            currentRoomKey: ''
+            currentRoomKey: '',
+            isPoll: false,
+            pollTimer: 0,
+            isAudioEnabled: true,
+            isVideoEnabled: true,
+            coHostUid: 0,
+            hostUid: 0,
+            defaultReactionMaps: {},
+            deltaReactions: {},
+            currentTimeStamp: 0,
+            winnersList: [
+                {
+                    imgUrl: "https://i.picsum.photos/id/796/200/200.jpg?hmac=TabKFVb5_IyNIu3LHpgEW6YnI0AxHo3G6fyHubk1OY8",
+                    name: "Saurabh Kataria"
+                },
+                {
+                    imgUrl: "https://i.picsum.photos/id/237/200/300.jpg?hmac=TmmQSbShHz9CdQm0NkEjx1Dyh_Y984R9LpNrpvH2D_U",
+                    name: "Amit Tandon"
+                },
+                {
+                    imgUrl: "https://i.picsum.photos/id/777/200/300.jpg?grayscale&hmac=MW3suAB5fTnZAza_Ye4364HuNDxQrcrBosftHnhxfug",
+                    name: "Ghost Rider"
+                },
+                {
+                    imgUrl: "https://i.picsum.photos/id/780/200/300.jpg?blur=5&hmac=OFNZbP6X3yU1IcqmMqucFI4J2N_3dBPHfVMu-gAyP-Y",
+                    name: "Bruce Wayne"
+                },
+                {
+                    imgUrl: "https://i.picsum.photos/id/866/200/300.jpg?hmac=rcadCENKh4rD6MAp6V_ma-AyWv641M4iiOpe1RyFHeI",
+                    name: "SRK"
+                }]
         }
         this.onConferenceTerminated = this.onConferenceTerminated.bind(this);
         this.onConferenceJoined = this.onConferenceJoined.bind(this);
@@ -85,26 +124,40 @@ class LiveStreamComp extends React.Component {
                         isChatEnable: snapshot.val()
                     })
                 })
-
-            this.listenToQuestions(channelId);
+            this.listenToWinnersList(channelId);
         }
+        this.listenToQuestions(channelId);
+
+        database()
+            .ref(ITEM_SEPERATOR + channelId + HOST_UID)
+            .once('value')
+            .then(snapshot => {
+                if (snapshot.val()) {
+                    this.setState({
+                        hostUid: snapshot.val()
+                    })
+                }
+            });
+
+        database()
+            .ref(ITEM_SEPERATOR + channelId + CO_HOST_UID)
+            .once('value')
+            .then(snapshot => {
+                if (snapshot.val()) {
+                    this.setState({
+                        coHostUid: snapshot.val()
+                    })
+                }
+            });
     }
 
-    askQuestion() {
-        const aCurrentQues = this.state.questionsList[this.state.currentQuestionCount]
+    askQuestion(value) {
+        let aCurrentQues = this.state.questionsList[value]
         this.setState({
-            currentQuestion: aCurrentQues,
-            currentQuestionCount: this.state.currentQuestionCount + 1,
+            currentQuestion: aCurrentQues
         }, () => {
-            if (this.state.questionsList.length > 0 && this.state.questionsList.length == this.state.currentQuestionCount) {
-                setTimeout(() => {
-                    database()
-                        .ref(ITEM_SEPERATOR + this.state.channelId + QUESTIONS)
-                        .update({
-                            currentQuestion: null
-                        })
-                }, 15000);
-            }
+            // if (!this.state.currentQuestion.answered)
+            //     this.startPollTimer();
         })
 
         // Setting the current question in firebase
@@ -115,26 +168,62 @@ class LiveStreamComp extends React.Component {
             })
     }
 
+    startPollTimer() {
+        setTimeout(() => {
+            if (this.state.pollTimer < 15) {
+                this.setState({
+                    pollTimer: this.state.pollTimer + 1
+                })
+                this.startPollTimer();
+            } else {
+                const currentQues = this.state.currentQuestion
+                let quesList = [...this.state.questionsList]
+                currentQues.answered = true
+                let i = 0;
+                for (i = 0; i < quesList.length; i++) {
+                    if (quesList[i].title === currentQues.title) {
+                        break;
+                    }
+                }
+                quesList[i] = currentQues;
+                this.setState({
+                    currentQuestion: currentQues,
+                    questionsList: quesList,
+                    pollTimer: 0
+                })
+                database()
+                    .ref(ITEM_SEPERATOR + this.state.channelId + QUESTIONS)
+                    .update({
+                        currentQuestion: currentQues
+                    })
+            }
+        }, 1000);
+    }
+
     listenToQuestions(channelId) {
         this.questionsRef = database()
             .ref(ITEM_SEPERATOR + channelId + QUESTIONS + '/currentQuestion')
             .on('value', snapshot => {
                 if (snapshot.val()) {
-                    console.log("Question value : ", snapshot.val())
                     this.setState({
                         currentQuestion: snapshot.val(),
-                        isVisible: true,
+                        isQuesVisible: true,
                         startTime: new Date()
                     }, () => {
-                        this.ansTimeout = setTimeout(() => {
-                            this.setState({
-                                isVisible: false,
-                                ansTime: 0
-                            }, () => {
-                                this.props.onOptionSelected(null, 0);
-                            })
-                        }, 15000);
+                        if (this.state.currentQuestion.answered) {
+
+                        } else {
+                            this.startPollTimer();
+                            this.ansTimeout = setTimeout(() => {
+                                this.setState({
+                                    ansTime: 0
+                                }, () => {
+                                    this.props.onOptionSelected(null, 0);
+                                })
+                            }, 15000);
+                        }
                     })
+
                 }
             });
     }
@@ -151,13 +240,55 @@ class LiveStreamComp extends React.Component {
         this.joinStreaming(url, userInfo);
     }
 
+    initAgora = async (chanellId) => {
+        // this.AgoraEngineRef = await RtcEngine.create("54378363c5f74b4e997dab4e384a32e5");
+        // await this.AgoraEngineRef?.enableLocalAudio(true);
+        // await this.AgoraEngineRef?.enableLocalVideo(true);
+
+        // await this.AgoraEngineRef.enableVideo();
+        // await this.AgoraEngineRef.startPreview()
+
+        // await this.AgoraEngineRef.setChannelProfile(ChannelProfile.LiveBroadcasting);
+        // if (this.props.user == HOST || this.props.user == CO_HOST) {
+        //     this.AgoraEngineRef.setClientRole(ClientRole.Broadcaster);
+        // }
+        // this.AgoraEngineRef.addListener("JoinChannelSuccess", (channel, uid, elapsed) => {
+        //     if (this.props.user == HOST) {
+        //         database().ref(ITEM_SEPERATOR + chanellId + SET_CALL_STATUS)
+        //             .update({
+        //                 hostUid: uid
+        //             });
+        //         this.setState({
+        //             hostUid: uid
+        //         })
+        //     } else if (this.props.user == CO_HOST) {
+        //         database().ref(ITEM_SEPERATOR + chanellId + SET_CALL_STATUS)
+        //             .update({
+        //                 coHostUid: uid
+        //             });
+        //         this.setState({
+        //             coHostUid: uid
+        //         })
+        //     }
+        //     this.onConferenceJoined();
+        // });
+        // this.AgoraEngineRef.addListener("ConnectionStateChanged", (channel, uid, elapsed) => {
+        //     // this.onConferenceJoined();
+        // });
+        // this.AgoraEngineRef.addListener("LeaveChannel", (channel, uid, elapsed) => {
+        // });
+    };
+
     componentWillUnmount() {
         BackHandler.removeEventListener('hardwareBackPress', this.endCall);
-        clearTimeout(this.starListener);
-        this.starListener = null;
+        clearTimeout(this.recationListener);
+        this.recationListener = null;
         this.removeFirebaseListeners();
         this.updateFirebase(this.state.currentRoomKey);
         this.jitsiErrorFixReverse();
+
+        // if (this.props.videoMode == PREMIUM && this.AgoraEngineRef !== undefined)
+        //     this.AgoraEngineRef.destroy();
     }
 
     /**
@@ -168,11 +299,31 @@ class LiveStreamComp extends React.Component {
     endCall = () => {
         if (this.props.user == HOST) {
             this.showAlert(Strings.ALERT, Strings.END_LIVE_STREAM);
-        } else if (this.props.user == ATTENDEE) {
+        } else if (this.props.user == ATTENDEE || this.props.user == CO_HOST) {
             this.showAlert(Strings.ALERT, Strings.ARE_YOU_SURE_YOU_WANT_TO_LEAVE);
         }
         return true
     };
+
+    onSwitchCamera = () => {
+        if (this.props.videoMode == PREMIUM) {
+            // this.AgoraEngineRef.switchCamera();
+        } else {
+            JitsiMeet.toggleCamera()
+        }
+    }
+
+    toggleFlash = () => {
+        // const isSupported = this.AgoraEngineRef.isCameraTorchSupported()
+        // isSupported.then(function (result) {
+        //     // here you can use the result of promiseB
+        // });
+        // if (this.props.videoMode == PREMIUM) {
+        //     this.AgoraEngineRef.setCameraTorchOn(true);
+        // } else {
+
+        // }
+    }
 
     /**
      * Shows an alert dialog with proper messages for {@link HOST} as well as
@@ -189,17 +340,19 @@ class LiveStreamComp extends React.Component {
                 {
                     text: Strings.OK,
                     onPress: () => {
-                        if (this.props.user == HOST) {
+                        if (this.props.user == HOST || this.props.user == CO_HOST) {
                             this.setState({
                                 currentQuestion: null,
-                                currentQuestionCount: 0
+                                isQuesVisible: false,
+                                isWinnersListVisible: false
                             })
                         } else if (this.props.user == ATTENDEE) {
                             this.setState({
                                 currentQuestion: null,
                                 ansTime: 0,
                                 startTime: 0,
-                                isVisible: false
+                                isQuesVisible: false,
+                                isWinnersListVisible: false
                             })
                         }
                         this.props.onCallEnded();
@@ -223,10 +376,13 @@ class LiveStreamComp extends React.Component {
      * @param {*} value   Reaction count
      */
     getValue(key, value) {
-        currentValue = this.props.chats.totalReactions[key]
+        let currentValue = this.props.chats.totalReactions[key]
         let localObj = { ...this.props.chats.totalReactions }
         localObj[key] = value
         this.props.onUpdateReactionMapper(localObj)
+        if (currentValue == NaN || currentValue == undefined) {
+            currentValue = 0
+        }
         return currentValue
     }
 
@@ -289,20 +445,52 @@ class LiveStreamComp extends React.Component {
      * @param {*} userInfo   Info of the user including name, profile image url and email
      */
     joinStreaming(url, userInfo) {
+        var channelId = this.props.callUrl.replace(BASE_URL, "");
         if (this.props.user == ATTENDEE) {
-            var channelId = this.props.callUrl.replace(BASE_URL, "");
             database()
                 .ref(ITEM_SEPERATOR + channelId + CALL_STATUS)
                 .once('value')
                 .then(snapshot => {
                     if (snapshot.val()) {
-                        JitsiMeet.call(url + '#config.startWithVideoMuted=true&config.startVideoMuted=true&config.startWithAudioMuted=true&config.startAudioMuted=true', userInfo);              // Stream is live
+                        if (this.props.videoMode == PREMIUM) {
+                            // this.initAgora(channelId).then(() => {
+                            //     this.AgoraEngineRef.joinChannel(this.props.token, channelId, null, 0)
+                            // });
+                        } else if (this.props.videoMode == NORMAL) {
+                            JitsiMeet.call(url + '#config.startWithVideoMuted=true&config.startVideoMuted=true&config.startWithAudioMuted=true&config.startAudioMuted=true', userInfo);              // Stream is live
+                        }
                     } else {
                         this.goBack();                              // Stream has ended
                     }
                 });
+
+            this.audioReference = database()
+                .ref(ITEM_SEPERATOR + channelId + AUDIO_STATUS)
+                .on('value', snapshot => {
+                    if (snapshot.val() !== null || snapshot.val() !== undefined) {
+                        this.setState({
+                            isAudioEnabled: snapshot.val()
+                        })
+                    }
+                });
+            this.videoReference = database()
+                .ref(ITEM_SEPERATOR + channelId + VIDEO_STATUS)
+                .on('value', snapshot => {
+                    if (snapshot.val() !== null || snapshot.val() !== undefined) {
+                        this.setState({
+                            isVideoEnabled: snapshot.val()
+                        }, () => {
+                        })
+                    }
+                });
         } else {
-            JitsiMeet.call(url, userInfo);
+            if (this.props.videoMode == PREMIUM) {
+                // this.initAgora(channelId).then(() => {
+                //     this.AgoraEngineRef.joinChannel(this.props.token, channelId, null, this.props.user == HOST ? 12345 : 98765)
+                // });
+            } else if (this.props.videoMode == NORMAL) {
+                JitsiMeet.call(url, userInfo);
+            }
         }
     }
 
@@ -312,25 +500,35 @@ class LiveStreamComp extends React.Component {
 
     onConferenceJoined(nativeEvent) {
         // Required for jitsi error 
-        this.jitsiErrorFix();
+        if (this.props.videoMode == NORMAL) {
+            this.jitsiErrorFix();
+        }
         var channelId = this.props.callUrl.replace(BASE_URL, "");
         this.setState({
             callJoined: true,
             channelId: channelId,
+            isPoll: this.props.isPoll
         })
         // Creating db and setting call status for other users to join
         if (this.props.user == HOST) {
+            setTimeout(() => {
+                JitsiMeet.toggleVideo(false)
+            }, 350);
+
             const newReference = database().ref(ITEM_SEPERATOR + channelId + SET_CALL_STATUS);
-            newReference.set({ isActive: true })
+            newReference.update({
+                isActive: true,
+                isVideoOn: this.state.isVideoEnabled,
+                isAudioOn: this.state.isAudioEnabled
+            })
                 .then(() => {
-                    this.updateChatVisibility(true);
+                    // this.updateChatVisibility(true);
                 });
 
             const callStatusReference = database().ref(ITEM_SEPERATOR + ACTIVE_ROOMS_LIST).push();
             this.setState({
                 currentRoomKey: callStatusReference.key
             })
-            console.log("Current Key :", callStatusReference.key);
             callStatusReference.set({
                 roomName: channelId
             })
@@ -340,7 +538,20 @@ class LiveStreamComp extends React.Component {
                 .set({
                     questions: this.props.questionsList
                 })
-        } else if (this.props.user == ATTENDEE) {
+
+            this.updateChatVisibility(this.props.chatEnable, channelId)
+            this.updateReactionsVisibility(this.props.reactionsArr && this.props.reactionsArr.length > 0 ? true : false, channelId)
+            this.updateReactionsArray(this.props.reactionsArr && this.props.reactionsArr.length > 0 ? this.props.reactionsArr : [], channelId)
+            this.setState({
+                isChatToggleEnabled: this.props.chatEnable,
+                isReactionsEnabled: this.props.reactionsArr && this.props.reactionsArr.length > 0 ? true : false,
+                reactionsArr: this.props.reactionsArr && this.props.reactionsArr.length > 0 ? this.props.reactionsArr : []
+            }, () => {
+                if (this.state.isReactionsEnabled) {
+                    this.setReactionMapper();
+                }
+            })
+        } else if (this.props.user == ATTENDEE || this.props.user == CO_HOST) {
             /** Putting a listener on call status(Used when the host ends the live stream)
              *  and navigating properly after the call has ended.
              *  
@@ -350,7 +561,11 @@ class LiveStreamComp extends React.Component {
                 .on('value', snapshot => {
                     if (!snapshot.val()) {
                         // Live Stream has ended 
-                        JitsiMeet.endCall();
+                        if (this.props.videoMode == PREMIUM) {
+                            // this.AgoraEngineRef.leaveChannel()
+                        } else {
+                            JitsiMeet.endCall();
+                        }
                         this.setState({
                             callJoined: false
                         })
@@ -360,8 +575,36 @@ class LiveStreamComp extends React.Component {
                         this.updateLiveAudienceCount(true);
                     }
                 });
+
+            this.emoticonsReference = database()
+                .ref(ITEM_SEPERATOR + channelId + SELECTED_EMOJI_ARRAY)
+                .on('value', snapshot => {
+                    let data = snapshot.val();
+                    if (data && data.length > 0) {
+                        let aTempObj = this.state.defaultReactionMaps
+                        for (const element of data) {
+                            aTempObj[element] = 0
+                        }
+                        this.setState({
+                            defaultReactionMaps: aTempObj
+                        })
+                    }
+                    this.setState({
+                        reactionsArr: data && data.length > 0 ? data : []
+                    })
+                });
+            this.emoticonsStatusReference = database()
+                .ref(ITEM_SEPERATOR + channelId + EMOTICONS_STATUS)
+                .on('value', snapshot => {
+                    let data = snapshot.val();
+                    if (data) {
+                        this.setReactionMapper();
+                    }
+                    this.setState({
+                        isReactionsEnabled: data ? data : false
+                    })
+                });
         }
-        this.setReactionMapper();
         this.addFirebaseListeners(channelId);
     }
 
@@ -383,11 +626,23 @@ class LiveStreamComp extends React.Component {
     onOptionSelected(value) {
         clearTimeout(this.ansTimeout);
         this.setState({
-            isVisible: false,
             ansTime: new Date() - this.state.startTime
         }, () => {
             this.props.onOptionSelected(value, this.state.ansTime);
         })
+    }
+
+    onCloseQues() {
+        this.setState({
+            isQuesVisible: false
+        })
+
+        // Setting the current question to null in firebase
+        database()
+            .ref(ITEM_SEPERATOR + this.state.channelId + QUESTIONS)
+            .update({
+                currentQuestion: null
+            })
     }
 
     /**
@@ -426,7 +681,6 @@ class LiveStreamComp extends React.Component {
                     return totalComments + 1;
                 })
                 .then(transaction => { });
-
         }
     }
 
@@ -438,8 +692,14 @@ class LiveStreamComp extends React.Component {
         // Removing listener for call status in case of ATTENDEE
         if (this.props.user == ATTENDEE) {
             database()
-                .ref(ITEM_SEPERATOR + this.state.channelId + CALL_STATUS)
-                .off('value', this.statusReference);
+                .ref(ITEM_SEPERATOR + this.state.channelId + QUESTIONS + '/winnersList')
+                .off('value', this.winnersListRef);
+            database()
+                .ref(ITEM_SEPERATOR + this.state.channelId + AUDIO_STATUS)
+                .off('value', this.audioReference);
+            database()
+                .ref(ITEM_SEPERATOR + this.state.channelId + VIDEO_STATUS)
+                .off('value', this.videoReference);
         }
         // Removing listener for chats
         database().ref(ITEM_SEPERATOR + this.state.channelId + CHATS)
@@ -458,6 +718,16 @@ class LiveStreamComp extends React.Component {
             database().ref(ITEM_SEPERATOR + this.state.channelId + QUESTIONS + '/currentQuestion')
                 .off('value', this.currentQuestion);
 
+            database()
+                .ref(ITEM_SEPERATOR + this.state.channelId + CALL_STATUS)
+                .off('value', this.statusReference);
+
+            database()
+                .ref(ITEM_SEPERATOR + this.state.channelId + SELECTED_EMOJI_ARRAY)
+                .off('value', this.emoticonsReference);
+            database()
+                .ref(ITEM_SEPERATOR + this.state.channelId + EMOTICONS_STATUS)
+                .off('value', this.emoticonsStatusReference);
         }
     }
 
@@ -476,13 +746,26 @@ class LiveStreamComp extends React.Component {
         )
     }
 
+    _renderFanEmoticons = ({ item, index }) => {
+        const emoji = EMOTICONS[item]
+        return (
+            <Pressable
+                onPress={this.onReact.bind(this, item)}>
+                <Text
+                    style={Styles.emoticonStyle}>
+                    {emoji}
+                </Text>
+            </Pressable>
+        )
+    }
+
     /**
      * Method that starts a listener that fetches the reaction count every second,
      * calculates the delta and updates in the Redux.
      * 
      */
     setReactionMapper() {
-        this.starListener = setTimeout(() => {
+        this.recationListener = setTimeout(() => {
             database()
                 .ref(ITEM_SEPERATOR + this.state.channelId + REACTIONS_ROOT)
                 .once('value')
@@ -497,23 +780,74 @@ class LiveStreamComp extends React.Component {
                             )
                         );
                         reactionArr.push(deltaReactions);
+                        this.setState({
+                            deltaReactions: deltaReactions,
+                            currentTimeStamp: new Date().getTime()
+                        })
                     } else {
-                        reactionArr.push(INITIAL_REACTIONS);
+                        reactionArr.push(this.state.defaultReactionMaps);
                     }
+
                     this.props.setReactionMap(reactionArr);
                     this.setReactionMapper();
                 });
-        }, 1000);
+        }, 1500);
     }
 
     /**
      * Method that get's called when the chat visiility switch is toggled.
      * 
      */
-    toggleSwitch = () => {
-        this.updateChatVisibility(!this.state.isChatToggleEnabled)
+    toggleChat = () => {
+        this.updateChatVisibility(!this.state.isChatToggleEnabled, this.state.channelId)
         this.setState({
             isChatToggleEnabled: !this.state.isChatToggleEnabled
+        })
+    }
+
+    toggleReaction = () => {
+        this.updateReactionsVisibility(!this.state.isReactionsEnabled, this.state.channelId)
+
+        if (!this.state.isReactionsEnabled && this.state.reactionsArr.length == 0) {
+            this.updateReactionsArray(DEFAULT_EMOTICON_ARRAY, this.state.channelId)
+        }
+        this.setState({
+            reactionsArr: !this.state.isReactionsEnabled && this.state.reactionsArr.length == 0 ? DEFAULT_EMOTICON_ARRAY : this.state.reactionsArr,
+            isReactionsEnabled: !this.state.isReactionsEnabled
+        }, () => {
+            if (this.state.isReactionsEnabled) {
+                this.setReactionMapper();
+            }
+        })
+    }
+
+    toggleAudio = async () => {
+        if (this.props.videoMode == PREMIUM) {
+            // await this.AgoraEngineRef?.enableLocalAudio(!this.state.isAudioEnabled);
+        } else {
+            JitsiMeet.toggleAudio(this.state.isAudioEnabled)
+        }
+        database().ref(ITEM_SEPERATOR + this.state.channelId + SET_CALL_STATUS)
+            .update({
+                isAudioOn: !this.state.isAudioEnabled
+            });
+        this.setState({
+            isAudioEnabled: !this.state.isAudioEnabled
+        })
+    }
+
+    toggleVideo = async () => {
+        if (this.props.videoMode == PREMIUM) {
+            // await this.AgoraEngineRef?.enableLocalVideo(!this.state.isVideoEnabled);
+        } else {
+            JitsiMeet.toggleVideo(this.state.isVideoEnabled)
+        }
+        database().ref(ITEM_SEPERATOR + this.state.channelId + SET_CALL_STATUS)
+            .update({
+                isVideoOn: !this.state.isVideoEnabled
+            });
+        this.setState({
+            isVideoEnabled: !this.state.isVideoEnabled
         })
     }
 
@@ -522,12 +856,55 @@ class LiveStreamComp extends React.Component {
      * 
      * @param {*} value 
      */
-    updateChatVisibility(value) {
-        database().ref(ITEM_SEPERATOR + this.state.channelId + SET_CALL_STATUS)
+    updateChatVisibility(value, channelId) {
+        database().ref(ITEM_SEPERATOR + channelId + SET_CALL_STATUS)
             .update({
                 chatVisible: value
             })
             .then(() => { });
+    }
+
+    /**
+     * Updates the firebase with chat visibility
+     * 
+     * @param {*} value 
+     */
+    updateReactionsVisibility(value, channelId) {
+        database().ref(ITEM_SEPERATOR + channelId + SET_CALL_STATUS)
+            .update({
+                reactionVisible: value
+            })
+            .then(() => { });
+    }
+
+    /**
+    * Updates the firebase with emoticons
+    * 
+    * @param {*} value 
+    */
+    updateReactionsArray(value, channelId) {
+        const reactionsNameArr = this.getReactionsArr(value)
+        let aTempObj = this.state.defaultReactionMaps
+        for (const element of reactionsNameArr) {
+            aTempObj[element] = 0
+        }
+        this.setState({
+            defaultReactionMaps: aTempObj
+        })
+        database().ref(ITEM_SEPERATOR + channelId + SET_CALL_STATUS)
+            .update({
+                reactionsArray: reactionsNameArr
+            })
+            .then(() => { });
+    }
+
+    getReactionsArr(value) {
+        let arr = [];
+        for (let i = 0; i < value.length; i++) {
+            arr.push(Object.keys(EMOTICONS).find(key => EMOTICONS[key] === value[i]))
+        }
+
+        return arr;
     }
 
     /**
@@ -536,10 +913,19 @@ class LiveStreamComp extends React.Component {
     * 
     */
     updateFirebase(currentRoomKey) {
-        JitsiMeet.endCall();
+        if (this.props.videoMode == PREMIUM) {
+            // if (this.AgoraEngineRef !== undefined)
+            //     this.AgoraEngineRef.leaveChannel()
+        } else {
+            JitsiMeet.endCall();
+        }
         if (this.props.user == HOST) {
             const newReference = database().ref(ITEM_SEPERATOR + this.state.channelId + SET_CALL_STATUS);
-            newReference.update({ isActive: false })
+            newReference.update({
+                isActive: false,
+                hostUid: 0,
+                coHostUid: 0
+            })
                 .then(() => {
                     database()
                         .ref(ITEM_SEPERATOR + this.state.channelId + ACTIVITY_MAP)
@@ -550,7 +936,6 @@ class LiveStreamComp extends React.Component {
                             this.props.onClearData();
                         })
                 });
-
             database().ref(ITEM_SEPERATOR + ACTIVE_ROOMS_LIST + ITEM_SEPERATOR + currentRoomKey)
                 .set({
                     roomName: null
@@ -559,6 +944,8 @@ class LiveStreamComp extends React.Component {
             if (this.state.channelId != null && this.state.channelId.length > 0) {
                 this.updateLiveAudienceCount(false);
             }
+            this.props.onClearData();
+        } else if (this.props.user == CO_HOST) {
             this.props.onClearData();
         }
     }
@@ -583,80 +970,242 @@ class LiveStreamComp extends React.Component {
             .then(transaction => { });
     }
 
-    render() {
-        const { user } = this.props;
-        const { callJoined, isChatToggleEnabled, isChatEnable, questionsList, totalComments,
-            currentQuestion, currentQuestionCount, isVisible } = this.state;
-        return (
-            <View style={{ backgroundColor: 'black', flex: 1, width: '100%', height: '100%' }}>
-                <JitsiMeetView
-                    onConferenceTerminated={this.onConferenceTerminated}
-                    onConferenceJoined={this.onConferenceJoined}
-                    onConferenceWillJoin={this.onConferenceWillJoin}
-                    style={{ flex: 1, height: '100%', width: '100%' }} />
+    onCloseWinnersList() {
+        this.setState({
+            isWinnersListVisible: false
+        })
 
-                { callJoined ?
-                    <View style={Styles.chatRoot}>
-                        <MaskedView element={<MaskedElement />}>
-                            <View style={Styles.listRoot}>
-                                {(user == CO_HOST || user == ATTENDEE) && !isChatEnable ?
-                                    null :
-                                    <FlatList
-                                        data={this.state.chatlist}
-                                        extraData={this.state}
-                                        renderItem={this._renderItemComponent}
-                                        style={Styles.flatlistStyle}
-                                        ref={ref => this.flatList = ref}
-                                        onContentSizeChange={() => this.flatList.scrollToEnd({ animated: true })}
-                                        contentContainerStyle={Styles.listContainerStyle} />
+        // Updating the winners list to null in firebase
+        database()
+            .ref(ITEM_SEPERATOR + this.state.channelId + QUESTIONS)
+            .update({
+                winnersList: null
+            })
+    }
+
+    onShowResult() {
+        this.setState({
+            isWinnersListVisible: true
+        })
+        database()
+            .ref(ITEM_SEPERATOR + this.state.channelId + QUESTIONS)
+            .update({
+                winnersList: this.state.winnersList
+            })
+    }
+
+    listenToWinnersList(channelId) {
+        this.winnersListRef = database()
+            .ref(ITEM_SEPERATOR + channelId + QUESTIONS + '/winnersList')
+            .on('value', snapshot => {
+                if (snapshot.val()) {
+                    this.setState({
+                        winnersList: snapshot.val,
+                        isWinnersListVisible: true
+                    })
+                }
+            });
+    }
+
+    getUserHelpers = () => {
+        const { isAudioEnabled, isVideoEnabled } = this.state
+        let userText = !isAudioEnabled ? "Host has muted self" : ""
+        userText = !isVideoEnabled ? "Host has turned off the camera" : userText
+        userText = !isAudioEnabled && !isVideoEnabled ? "Host has turned off the camera & muted self" : userText
+
+        const imageRootStyle = !isAudioEnabled && !isVideoEnabled ? Styles.userRootSmallImageStyle : Styles.userRootLargeImageStyle
+        const imageStyle = !isAudioEnabled && !isVideoEnabled ? Styles.userHelpSmallImageStyle : Styles.userHelpImageStyle
+
+
+        return (
+            <View
+                style={Styles.userHelperRoot}>
+                <View
+                    style={Styles.horizontalRoot}>
+                    {
+                        !isVideoEnabled ?
+                            <View
+                                style={[Styles.userHelpImageRootStyle, Styles.imageRootStyle]}>
+                                <Image
+                                    style={imageStyle}
+                                    source={require('../assets/images/video.png')}
+                                />
+                            </View>
+                            : null}
+                    {
+                        !isAudioEnabled ?
+                            <View
+                                style={[Styles.userHelpImageRootStyle, Styles.imageRootStyle]}>
+                                <Image
+                                    style={imageStyle}
+                                    source={require('../assets/images/audio.png')}
+                                />
+                            </View>
+                            : null
+                    }
+                </View>
+                <Text
+                    style={Styles.userHelperTextStyle}>
+                    {userText}
+                </Text>
+            </View>
+        );
+    }
+
+    render() {
+        const { user, videoMode } = this.props;
+        const { callJoined, isChatToggleEnabled, isReactionsEnabled, isChatEnable, questionsList, totalComments, pollTimer, isAudioEnabled, isVideoEnabled, deltaReactions,
+            currentQuestion, winnersList, hostUid, coHostUid, isQuesVisible, isWinnersListVisible, channelId, reactionsArr, chatlist, isPoll, currentTimeStamp } = this.state;
+
+        let commentsText = isChatToggleEnabled ? totalComments + ' Comments' : 'Comments turned off';
+        let leaveLabel = isPoll && user == HOST ? "End Poll" : Strings.LEAVE
+        let otherUserUid = user == HOST ? coHostUid : (user == CO_HOST ? hostUid : 0)
+
+        const tileStyle = coHostUid > 0 ? Styles.tilescreen : Styles.fullscreen
+
+        return (
+            <View style={{ backgroundColor: Colors.APP_DARK_BLUE, flex: 1, width: '100%', height: '100%' }}>
+                {videoMode == PREMIUM ?
+                    <View
+                        style={Styles.root}>
+                        {user == HOST || user == CO_HOST ?
+                            <View>
+                                {/* {
+                                    otherUserUid > 0 ?
+                                        <RtcRemoteView.SurfaceView
+                                            uid={otherUserUid}
+                                            style={tileStyle}
+                                            channelId={channelId} />
+                                        : null
+                                }
+                                <RtcLocalView.SurfaceView
+                                    style={tileStyle}
+                                    channelId={channelId} /> */}
+                            </View>
+                            : <View>
+                                {isVideoEnabled ?
+                                    <View>
+                                        {/* <RtcRemoteView.SurfaceView
+                                            uid={hostUid}
+                                            style={tileStyle}
+                                            channelId={channelId} />
+                                        {
+                                            coHostUid > 0 ?
+                                                <RtcRemoteView.SurfaceView
+                                                    uid={coHostUid}
+                                                    style={tileStyle}
+                                                    channelId={channelId} />
+                                                : null
+                                        } */}
+                                    </View>
+                                    : null
                                 }
                             </View>
+                        }
+                    </View>
+                    :
+                    <View
+                        style={Styles.root}>
+                        {user == ATTENDEE && !isVideoEnabled ?
+                            null :
+                            <JitsiMeetView
+                                onConferenceTerminated={this.onConferenceTerminated}
+                                onConferenceJoined={this.onConferenceJoined}
+                                onConferenceWillJoin={this.onConferenceWillJoin}
+                                style={{ flex: 1, height: '100%', width: '100%' }} />
+                        }
+                    </View>
+                }
+                { callJoined ?
+                    <View style={Styles.toolbarRoot}>
+                        {
+                            (user == HOST || user == CO_HOST) && !isPoll ?
+                                <ToolbarComp
+                                    onCancelCall={this.endCall}
+                                    onFlashOff={this.toggleFlash}
+                                    onFlashOn={this.toggleFlash}
+                                    onSwitchCamera={this.onSwitchCamera} />
+                                : null
+                        }
 
-                        </MaskedView>
+                        <LiveCounterComp
+                            totalCount={this.props.chats.liveAudienceCount}
+                            style={Styles.liveCounterStyle} />
+                    </View>
+                    : null
+                }
+                {
+                    user == ATTENDEE && (!isAudioEnabled || !isVideoEnabled) ?
+                        this.getUserHelpers()
+                        : null
+                }
+                {callJoined && !isPoll ?
+                    <View style={Styles.chatRoot}>
+                        {
+                            user == ATTENDEE && !isChatEnable ?
+                                null :
+                                <UserInteractionBottomComp
+                                    chatList={chatlist}
+                                    totalComments={totalComments}
+                                    endCall={this.endCall}
+                                    reactionArr={reactionsArr}
+                                    deltaReactions={deltaReactions}
+                                    onReaction={this.onReact.bind(this)}
+                                    onReactionsEnabled={isReactionsEnabled}
+                                    currentTimeStamp={currentTimeStamp}
+                                    user={user} />
+                        }
+
                         {
                             user == HOST ?
-                                <View>
+                                <HostOptionsComp
+                                    style={Styles.hostOptionsRoot}
+                                    onMessageEnabled={isChatToggleEnabled}
+                                    onMessageToggle={this.toggleChat}
+                                    onReactionEnabled={isReactionsEnabled}
+                                    onReactionToggle={this.toggleReaction}
+                                    reactionArr={reactionsArr}
+                                    onCameraEnabled={isVideoEnabled}
+                                    onCameraToggle={this.toggleVideo}
+                                    onMikeEnabled={isAudioEnabled}
+                                    onMikeToggle={this.toggleAudio} />
+                                : null
+                        }
+                        {
+                            user == HOST ?
+                                <View
+                                    style={Styles.bottomRoot}>
+                                    {isChatToggleEnabled ?
+                                        <Image
+                                            style={Styles.tint}
+                                            source={require('../assets/images/comment.png')} />
+                                        : null
+                                    }
                                     <Text
                                         style={Styles.commentsCountRoot}>
-                                        {totalComments} Comments
-                                </Text>
-                                    <Pressable
-                                        onPress={this.endCall}
-                                        style={Styles.endBtnStyle}>
-                                        <Text
-                                            style={Styles.endBtnTextStyle}>
-                                            {Strings.END}
-                                        </Text>
-                                    </Pressable>
+                                        {commentsText}
+                                    </Text>
+                                    <ButtonComp
+                                        label={"End Livestream"}
+                                        onPress={this.endCall} />
                                 </View>
                                 : null
                         }
                         {
                             user == ATTENDEE && isChatEnable ?
-                                <KeyboardAvoidingView style={Styles.bottomRoot}>
+                                <KeyboardAvoidingView
+                                    style={Styles.bottomRoot}>
                                     <TextInput
                                         style={Styles.msgRoot}
                                         placeholder={Strings.ENTER_MESSAGE}
                                         onChangeText={this.onMsgUpdated.bind(this)}
                                         value={this.state.msg}
-                                        placeholderTextColor={Colors.GREY} />
+                                        placeholderTextColor={Colors.THUMB_COLOR_DISABLED} />
 
-                                    <Pressable
-                                        onPress={this.onSendMsg.bind(this)}
-                                        style={Styles.buttonStyle}>
-                                        <Image
-                                            style={Styles.imageBtnStyle}
-                                            source={require('./../assets/images/send.png')}
-                                        />
-                                    </Pressable>
-                                    <Pressable
-                                        onPress={this.onReact.bind(this, "Star")}
-                                        style={Styles.buttonStyle}>
-                                        <Image
-                                            style={Styles.imageBtnStyle}
-                                            source={require('./../assets/images/star.png')}
-                                        />
-                                    </Pressable>
+                                    <ButtonComp
+                                        buttonStyle={{ backgroundColor: '#FF3EA6' }}
+                                        label={"Send"}
+                                        onPress={this.onSendMsg.bind(this)} />
                                 </KeyboardAvoidingView>
                                 : null
                         }
@@ -665,57 +1214,78 @@ class LiveStreamComp extends React.Component {
                     : null
                 }
                 {
-                    user == ATTENDEE && callJoined ?
-                        <Pressable
-                            onPress={this.endCall}
-                            style={Styles.leaveBtnStyle}>
-                            <Text
-                                style={Styles.endBtnTextStyle}>
-                                {Strings.LEAVE}
-                            </Text>
-                        </Pressable>
+                    (user == ATTENDEE && callJoined) || isPoll ?
+                        <ButtonComp
+                            buttonStyle={[{ backgroundColor: '#FF3EA6' }]}
+                            style={Styles.leaveBtnStyle}
+                            label={leaveLabel}
+                            onPress={this.endCall} />
                         : null
                 }
-                { callJoined ?
-                    <LiveCounterComp
-                        totalCount={this.props.chats.liveAudienceCount}
-                        style={Styles.liveCounterStyle} />
-                    : null
-                }
-                {user == HOST && callJoined ?
-                    <View
-                        style={Styles.chatToggleStyle}>
-                        <Switch
-                            trackColor={{ false: Colors.TOGGLE_BACKGROUND_TRACK, true: Colors.TOGGLE_BACKGROUND_TRACK }}
-                            thumbColor={isChatToggleEnabled ? Colors.RED : Colors.THUMB_COLOR_DISABLED}
-                            ios_backgroundColor={Colors.TOGGLE_BACKGROUND_TRACK}
-                            onValueChange={this.toggleSwitch}
-                            value={isChatToggleEnabled}
-                        />
-                        {
-                            user == HOST && questionsList.length > 0 && questionsList.length > currentQuestionCount ?
-                                <Pressable
-                                    onPress={this.askQuestion.bind(this)}
-                                    style={Styles.askQuestionStyle}>
-                                    <Text
-                                        style={Styles.endBtnTextStyle}>
-                                        {Strings.ASK_QUESTION}
-                                    </Text>
-                                </Pressable>
-                                : null
-                        }
-                    </View>
-                    : null
+                {
+                    isPoll && reactionsArr.length > 0 ?
+                        <View
+                            style={Styles.chatRoot}>
+                            <AnimatedEmoticonsComp
+                                reactionArr={reactionsArr} />
+                        </View>
+                        : null
                 }
                 {
-                    user == ATTENDEE ?
-                        <QuizComponent
-                            isVisible={isVisible}
-                            question={currentQuestion}
-                            optionSelected={this.onOptionSelected.bind(this)} />
+                    user == HOST && callJoined && isPoll ?
+                        <PollList
+                            quesList={questionsList}
+                            askQues={this.askQuestion.bind(this)}
+                            showResult={this.onShowResult.bind(this)} />
                         : null
                 }
 
+                {
+                    isPoll && isQuesVisible ?
+                        <View
+                            style={Styles.pollTimerRoot}>
+                            <ImageTextComp
+                                value={pollTimer + ' sec'}
+                                imgSrc={'../assets/images/close.png'} />
+                            {
+                                currentQuestion && currentQuestion.answered ?
+                                    <ImageTextComp
+                                        value={1654}
+                                        imgSrc={'../assets/images/close.png'} />
+                                    : null}
+
+                        </View>
+                        : null
+                }
+                {
+                    isPoll ?
+                        <QuizComponent
+                            isVisible={isQuesVisible}
+                            question={currentQuestion}
+                            user={user}
+                            optionSelected={this.onOptionSelected.bind(this)}
+                            onCloseQues={this.onCloseQues.bind(this)} />
+                        : null
+                }
+                {
+                    isPoll ?
+                        <WinnersComp
+                            isVisible={isWinnersListVisible}
+                            onCloseWinnersList={this.onCloseWinnersList.bind(this)}
+                            winnersList={winnersList} />
+                        : null
+                }
+                {
+                    isPoll && user == ATTENDEE && reactionsArr.length > 0 ?
+                        <FlatList
+                            data={reactionsArr}
+                            extraData={this.state}
+                            renderItem={this._renderFanEmoticons}
+                            style={Styles.emojiRootStyle}
+                            horizontal={true}
+                            contentContainerStyle={Styles.emojiContentStyle} />
+                        : null
+                }
             </View>
         );
     }
@@ -724,12 +1294,22 @@ class LiveStreamComp extends React.Component {
 const Styles = StyleSheet.create({
     root: {
         flex: 1,
-        color: Colors.BLACK,
+        color: Colors.APP_DARK_BLUE,
     },
-    flatlistStyle: {
-        flexGrow: 0,
-        marginTop: Dimens.dimen_16,
-        marginBottom: Dimens.dimen_4
+    toolbarRoot: {
+        flex: 1,
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0
+    },
+    bottomRoot: {
+        zIndex: 9999,                              // Just to handle click on top of comments modal
+        flexDirection: 'row',
+        alignItems: 'center',
+        height: Dimens.dimen_56,
+        paddingHorizontal: Dimens.dimen_16,
+        backgroundColor: Colors.DARK_BACKGROUND,
     },
     chatRoot: {
         height: windowHeight * 0.6,
@@ -739,95 +1319,132 @@ const Styles = StyleSheet.create({
         bottom: Dimens.dimen_0,
         justifyContent: 'flex-end',
     },
-    listRoot: {
-        justifyContent: 'flex-end',
-        width: windowWidth,
-    },
-    chatStyles: {
-        fontSize: Dimens.font_14,
-    },
-    listContainerStyle: {
-        flex: 0
-    },
-    emoticonsRoot: {
-        justifyContent: 'flex-end',
-        position: 'absolute',
-        bottom: Dimens.dimen_0,
-        height: windowHeight * 0.6,
-        width: windowWidth,
-    },
-    bottomRoot: {
-        flexDirection: 'row',
-        padding: Dimens.dimen_8
-    },
     msgRoot: {
         paddingHorizontal: Dimens.dimen_16,
         paddingVertical: Dimens.dimen_4,
         marginEnd: Dimens.dimen_4,
-        borderRadius: Dimens.dimen_16,
+        borderRadius: Dimens.dimen_8,
         borderWidth: Dimens.dimen_2,
         flex: 1,
         borderColor: Colors.WHITE,
-        color: Colors.WHITE,
+        color: Colors.THUMB_COLOR_DISABLED,
+        backgroundColor: Colors.WHITE
     },
     commentsCountRoot: {
         paddingHorizontal: Dimens.dimen_16,
         paddingVertical: Dimens.dimen_4,
-        marginHorizontal: Dimens.dimen_16,
-        borderRadius: Dimens.dimen_16,
-        borderWidth: Dimens.dimen_2,
-        borderColor: Colors.WHITE,
         color: Colors.WHITE,
+        fontSize: Dimens.font_14,
+        flex: 1
+    },
+    horizontalRoot: {
+        flexDirection: 'row',
+        alignItems: 'center'
+    },
+    userHelperRoot: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'absolute',
+        top: 0,
+        bottom: 0,
+        alignSelf: 'baseline',
+        start: 0,
+        end: 0
+    },
+    userRootLargeImageStyle: {
+        width: Dimens.dimen_124,
+        height: Dimens.dimen_124,
+    },
+    userRootSmallImageStyle: {
+        width: Dimens.dimen_96,
+        height: Dimens.dimen_96,
+    },
+    userHelpImageRootStyle: {
+        backgroundColor: Colors.APP_DARK_BLUE_TRANSPARENT,
+        borderWidth: Dimens.dimen_10,
+        borderRadius: Dimens.dimen_64,
+        borderColor: Colors.WHITE_TRANSPARENT,
+        padding: Dimens.dimen_24,
+        margin: Dimens.dimen_8,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    userHelpImageStyle: {
+        width: Dimens.dimen_64,
+        height: Dimens.dimen_64,
+        tintColor: Colors.WHITE
+    },
+    userHelpSmallImageStyle: {
+        width: Dimens.dimen_56,
+        height: Dimens.dimen_56,
+        tintColor: Colors.WHITE
+    },
+    userHelperTextStyle: {
+        fontSize: Dimens.font_16,
+        color: Colors.WHITE
     },
     buttonStyle: {
         marginHorizontal: Dimens.dimen_4
     },
-    endBtnStyle: {
-        backgroundColor: Colors.RED,
-        borderRadius: Dimens.dimen_4,
-        position: 'absolute',
-        right: Dimens.dimen_0,
-        bottom: Dimens.dimen_0,
-        margin: Dimens.dimen_24,
-        paddingHorizontal: Dimens.dimen_12,
-        paddingVertical: Dimens.dimen_6,
-    },
     leaveBtnStyle: {
-        backgroundColor: Colors.RED,
+        backgroundColor: '#FF3EA6',
         borderRadius: Dimens.dimen_4,
         position: 'absolute',
         right: Dimens.dimen_0,
         top: Dimens.dimen_0,
         margin: Dimens.dimen_24,
         paddingHorizontal: Dimens.dimen_12,
-        paddingVertical: Dimens.dimen_6,
-    },
-    askQuestionStyle: {
-        backgroundColor: Colors.RED,
-        borderRadius: Dimens.dimen_4,
-        marginVertical: Dimens.dimen_4,
-        paddingHorizontal: Dimens.dimen_12,
-        paddingVertical: Dimens.dimen_6,
-    },
-    endBtnTextStyle: {
-        color: Colors.WHITE
-    },
-    imageBtnStyle: {
-        width: Dimens.dimen_36,
-        height: Dimens.dimen_36,
-        borderRadius: Dimens.dimen_18,
     },
     liveCounterStyle: {
-        position: 'absolute',
-        right: Dimens.dimen_0,
-        left: Dimens.dimen_0,
-        margin: Dimens.dimen_24,
+        margin: Dimens.dimen_16,
     },
-    chatToggleStyle: {
+    tilescreen: {
+        width: windowWidth - 8,
+        height: windowHeight / 2 - 4,
+        backgroundColor: Colors.WHITE,
+        borderRadius: Dimens.dimen_8,
+        marginHorizontal: Dimens.dimen_4,
+        marginVertical: Dimens.dimen_2
+    },
+    fullscreen: {
+        width: windowWidth,
+        height: windowHeight,
+        // backgroundColor: Colors.WHITE
+    },
+    hostOptionsRoot: {
         position: 'absolute',
-        right: Dimens.dimen_0,
-        top: Dimens.dimen_0,
-        margin: Dimens.dimen_24,
+        right: 0,
+        top: 0,
+        bottom: 0
+    },
+    pollTimerRoot: {
+        position: 'absolute',
+        right: 0,
+        top: 100
+    },
+    emoticonStyle: {
+        fontSize: Dimens.font_20,
+        marginHorizontal: Dimens.dimen_12,
+        margin: Dimens.dimen_8,
+        padding: Dimens.dimen_4,
+        textAlign: 'center',
+        alignSelf: 'baseline'
+    },
+    emojiRootStyle: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: Colors.APP_DARK_BLUE,
+        height: Dimens.dimen_56
+    },
+    emojiContentStyle: {
+        flex: 1,
+        alignItems: 'stretch',
+        justifyContent: 'space-around'
+    },
+    tint: {
+        tintColor: Colors.WHITE
     }
 })
 
