@@ -33,7 +33,8 @@ allprojects {
         }
         maven { // <---- Add this block
             // url "https://github.com/jitsi/jitsi-maven-repository/raw/master/releases"
-            url "file:/tmp/repo"
+            url "https://github.com/Saurabh-WowLabz-Kataria/jitsi-android-artifacts/raw/main"
+            // url "file:/tmp/repo"
         }
         google()
         jcenter()
