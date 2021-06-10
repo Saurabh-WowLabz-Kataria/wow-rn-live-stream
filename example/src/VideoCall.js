@@ -3,11 +3,10 @@ import {
     View,
     Text,
     TouchableOpacity,
-    StyleSheet,
-    Animated
+    StyleSheet
 } from "react-native";
 import { LiveStreamComp } from 'react-native-wow-rn-live-stream';
-import { HOST, BASE_URL, QUESTIONS, ITEM_SEPERATOR } from 'react-native-wow-rn-live-stream';
+import { HOST, BASE_URL, NORMAL, QUESTIONS, ITEM_SEPERATOR } from 'react-native-wow-rn-live-stream';
 import database from '@react-native-firebase/database';
 
 class VideoCall extends Component {
@@ -17,36 +16,84 @@ class VideoCall extends Component {
         this.state = {
             sampleQuestions: [
                 {
-                    title: 'First Question',
+                    title: 'Who played Mr.India? ',
                     options: [
-                        'First Options',
-                        'Second Options',
-                        'Third Option',
-                        'Fourth Option'
-                    ]
+                        {
+                            option: 'Anil Kapoor',
+                            result: 59
+                        },
+                        {
+                            option: 'Amir Khan',
+                            result: 15
+                        },
+                        {
+                            option: 'Don Jon',
+                            result: 5
+                        },
+                        {
+                            option: 'Irfan Khan',
+                            result: 21
+                        }
+                    ],
+                    answered: false,
+                    correctAns: 'Anil Kapoor'
                 },
                 {
-                    title: 'Second Question',
+                    title: 'Capital Of India',
                     options: [
-                        'First Options',
-                        'Second Options',
-                        'Third Option']
+                        {
+                            option: 'Kolkata',
+                            result: 7
+                        },
+                        {
+                            option: 'Mumbai',
+                            result: 11
+                        },
+                        {
+                            option: 'Delhi',
+                            result: 82
+                        },
+                    ],
+                    answered: false,
+                    correctAns: 'Delhi'
                 },
                 {
-                    title: 'Third Question',
+                    title: 'Fastest Men on Earth?',
                     options: [
-                        'First Options',
-                        'Second Options',
-                        'Third Option',
-                        'Fourth Option'
-                    ]
+                        {
+                            option: 'Usain Bolt',
+                            result: 21
+                        },
+                        {
+                            option: 'Flash',
+                            result: 27
+                        },
+                        {
+                            option: 'Superman',
+                            result: 11
+                        },
+                        {
+                            option: 'MSD',
+                            result: 41
+                        }
+                    ],
+                    answered: false,
+                    correctAns: 'Usain Bolt'
                 },
                 {
-                    title: 'Fourth Question',
+                    title: 'Is Leo DiCaprio best?',
                     options: [
-                        'First Options',
-                        'Second Options'
-                    ]
+                        {
+                            option: 'Yes',
+                            result: 77
+                        },
+                        {
+                            option: 'No',
+                            result: 23
+                        }
+                    ],
+                    answered: false,
+                    correctAns: 'Yes'
                 }
             ]
         }
@@ -65,6 +112,16 @@ class VideoCall extends Component {
     render() {
         return (
             <View style={Styles.root}>
+                {/* <LiveStreamComp
+                    callUrl={this.props.route.params.url}
+                    user={this.props.route.params.user}
+                    userName={this.props.route.params.userName}
+                    email={this.props.route.params.email}
+                    userImageUrl={this.props.route.params.userImageUrl}
+                    onCallEnded={this.onCallEnded.bind(this)}
+                    questionsList={this.state.sampleQuestions}
+                    onOptionSelected={this.onOptionSelected.bind(this)} /> */}
+
                 <LiveStreamComp
                     callUrl={this.props.route.params.url}
                     user={this.props.route.params.user}
@@ -73,7 +130,13 @@ class VideoCall extends Component {
                     userImageUrl={this.props.route.params.userImageUrl}
                     onCallEnded={this.onCallEnded.bind(this)}
                     questionsList={this.state.sampleQuestions}
-                    onOptionSelected={this.onOptionSelected.bind(this)} />
+                    onOptionSelected={this.onOptionSelected.bind(this)}
+                    videoMode={NORMAL}
+                    token={'00654378363c5f74b4e997dab4e384a32e5IABr3pRYedpFmoLtGUW4ZYURXR/WbX+AjlzyTeWLsHVODc7QEgUAAAAAEAD7cHwez7W4YAEAAQDPtbhg'}
+                    chatEnable={this.props.route.params.chatEnable}
+                    reactionsArr={this.props.route.params.reactionsArr}
+                    isPoll={this.props.route.params.isPoll}
+                />
 
             </View>
         )
