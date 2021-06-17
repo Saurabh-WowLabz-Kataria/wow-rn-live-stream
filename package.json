@@ -1,7 +1,7 @@
 {
   "name": "react-native-wow-rn-live-stream",
   "title": "React Native Wow Rn Live Stream",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "A custom React Native live stream component using Jitsi Meet SDK wrapper for React Native.",
   "main": "index.js",
   "files": [
