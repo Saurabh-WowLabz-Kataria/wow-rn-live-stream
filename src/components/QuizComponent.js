@@ -69,6 +69,7 @@ class QuizComponent extends Component {
                             this.state.selectedItemId.option == item.option ?
                                 <Image
                                     source={require('../../assets/images/close.png')}
+                                    style={Styles.imageStyle}
                                 />
                                 : null
                         }
@@ -115,7 +116,7 @@ class QuizComponent extends Component {
                             <Text
                                 style={Styles.titleStyle}>
                                 Question
-                                </Text>
+                            </Text>
                             <Pressable
                                 onPress={this.onCloseQues.bind(this)}>
                                 <Image
@@ -151,7 +152,9 @@ const Styles = StyleSheet.create({
     },
     titleStyle: {
         fontSize: Dimens.font_16,
-        color: Colors.POLL_TEXT_COLOR
+        color: Colors.POLL_TEXT_COLOR,
+        fontFamily: "SFUIText-Regular",
+        fontWeight: "600"
     },
     flatlistStyle: {
         marginTop: Dimens.dimen_16,
@@ -173,7 +176,9 @@ const Styles = StyleSheet.create({
         alignSelf: 'stretch',
         color: Colors.POLL_TEXT_COLOR,
         margin: Dimens.dimen_4,
-        flex: 1
+        flex: 1,
+        fontFamily: "SFUIText-Regular",
+        fontWeight: "400"
     },
     selectedBorder: {
         borderRadius: Dimens.dimen_4,
@@ -183,6 +188,11 @@ const Styles = StyleSheet.create({
     resultTextStyle: {
         fontSize: Dimens.font_11,
         color: Colors.THUMB_COLOR_DISABLED,
+        fontFamily: "SFUIText-Regular",
+        fontWeight: "400"
+    },
+    imageStyle: {
+        padding: Dimens.dimen_4
     }
 })
 export default QuizComponent;

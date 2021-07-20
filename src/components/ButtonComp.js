@@ -46,6 +46,8 @@ const Styles = StyleSheet.create({
     label: {
         fontSize: Dimens.font_12,
         color: Colors.WHITE,
+        fontFamily: "SFUIText-Regular",
+        fontWeight: "700"
     }
 })
 export default ButtonComp;

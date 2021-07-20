@@ -56,11 +56,15 @@ const Styles = StyleSheet.create({
     userName: {
         fontSize: Dimens.font_14,
         fontWeight: 'bold',
-        color: Colors.WHITE
+        color: Colors.WHITE,
+        fontFamily: "SFUIText-Regular",
+        fontWeight: "600"
     },
     msg: {
         fontSize: Dimens.font_14,
-        color: Colors.WHITE
+        color: Colors.WHITE,
+        fontFamily: "SFUIText-Regular",
+        fontWeight: "400"
     }
 })
 export default MessageComp;

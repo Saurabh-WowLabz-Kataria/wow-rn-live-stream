@@ -20,7 +20,7 @@ function LiveCounterComp({ totalCount, style }) {
             <Text
                 style={Styles.liveCounter}>
                 {totalCount} Live
-                </Text>
+            </Text>
         </View>
     )
 }
@@ -36,7 +36,9 @@ const Styles = StyleSheet.create({
         paddingHorizontal: Dimens.dimen_16,
         paddingVertical: Dimens.dimen_4,
         borderRadius: Dimens.dimen_16,
-        backgroundColor: Colors.APP_BLUE
+        backgroundColor: Colors.APP_BLUE,
+        fontFamily: "SFUIText-Regular",
+        fontWeight: "600"
     }
 })
 export default LiveCounterComp;

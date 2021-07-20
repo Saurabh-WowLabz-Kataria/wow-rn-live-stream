@@ -34,7 +34,9 @@ const Styles = StyleSheet.create({
     label: {
         fontSize: Dimens.font_12,
         color: Colors.WHITE,
-        marginTop: Dimens.dimen_4
+        marginTop: Dimens.dimen_4,
+        fontFamily: "SFUIText-Regular",
+        fontWeight: "500"
     },
     imageBackground: {
         backgroundColor: Colors.WHITE,

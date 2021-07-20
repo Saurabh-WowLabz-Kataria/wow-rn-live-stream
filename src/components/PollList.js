@@ -5,7 +5,8 @@ import {
     StyleSheet,
     Dimensions,
     Text,
-    Pressable
+    Pressable,
+    ImageBackground
 } from "react-native";
 import Colors from '../utils/Colors'
 import Dimens from '../utils/Dimens'
@@ -21,10 +22,13 @@ class PollList extends Component {
         this.state = {
             quesList: [],
         }
+        this.modalizeRef = React.createRef();
     }
 
     onAskQues(value) {
         this.props.askQues(value)
+        this.modalizeRef.current.close('alwaysOpen');
+
     }
 
     /**
@@ -66,6 +70,7 @@ class PollList extends Component {
 
     onShowResult() {
         this.props.showResult();
+        this.modalizeRef.current.close('alwaysOpen');
     }
 
     footer = () => {
@@ -73,13 +78,18 @@ class PollList extends Component {
             <Pressable
                 onPress={this.onShowResult.bind(this)}
                 style={Styles.winnerCardStyle}>
-                <View
-                    style={Styles.winnersSubRootBorder}>
-                    <Text
-                        style={[Styles.winnersTextStyle]}>
-                        Announce Winners
-                    </Text>
-                </View>
+                <ImageBackground
+                    source={require('../../assets/images/confetti.png')}
+                    style={Styles.imageBackground}>
+                    <View
+                        style={Styles.winnersSubRootBorder}>
+
+                        <Text
+                            style={[Styles.winnersTextStyle]}>
+                            {'Announce\nWinners'}
+                        </Text>
+                    </View>
+                </ImageBackground>
             </Pressable>
         );
     };
@@ -88,10 +98,9 @@ class PollList extends Component {
         const { quesList } = this.state
         return (
             <Modalize
-                ref={ref => this.modalizeRef = ref}
+                ref={this.modalizeRef}
                 alwaysOpen={12}
                 modalHeight={windowHeight * 0.2}
-
                 withOverlay={false}>
                 <View style={Styles.contentStyle}>
                     <FlatList
@@ -138,34 +147,45 @@ const Styles = StyleSheet.create({
         borderRadius: Dimens.dimen_4,
         margin: Dimens.dimen_8,
         marginEnd: Dimens.dimen_16,
-        alignItems: 'center',
-        justifyContent: 'center',
+        // alignItems: 'center',
+        // justifyContent: 'center',
         width: windowWidth * 0.4,
         height: windowHeight * 0.15
+    },
+    imageBackground: {
+        flex: 1,
+        margin: Dimens.dimen_4
     },
     winnersTextStyle: {
         // flex: 1,
         fontSize: Dimens.font_16,
         color: Colors.POLL_TEXT_COLOR,
         textAlign: 'center',
+        fontFamily: "SFUIText-Regular",
+        fontWeight: "600"
     },
     winnersSubRootBorder: {
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
         padding: Dimens.dimen_8,
-        marginVertical: Dimens.dimen_4,
+        // margin: Dimens.dimen_4,
         borderColor: Colors.APP_BLUE,
         borderWidth: Dimens.dimen_2,
         borderRadius: Dimens.dimen_4
     },
     questionIndexStyle: {
         fontSize: Dimens.font_14,
-        color: Colors.POLL_TEXT_COLOR
+        color: Colors.POLL_TEXT_COLOR,
+        fontFamily: "SFUIText-Regular",
+        fontWeight: "600"
     },
     questionTitleStyle: {
         fontSize: Dimens.font_11,
-        color: Colors.POLL_TEXT_COLOR
+        color: Colors.POLL_TEXT_COLOR,
+        marginTop: Dimens.dimen_8,
+        fontFamily: "SFUIText-Regular",
+        fontWeight: "500"
     },
     answeredText: {
         opacity: 0.6

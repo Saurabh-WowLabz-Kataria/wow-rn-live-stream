@@ -232,15 +232,21 @@ const Styles = StyleSheet.create({
     },
     titleStyle: {
         fontSize: Dimens.font_18,
-        color: Colors.WHITE
+        color: Colors.WHITE,
+        fontFamily: "SFUIText-Regular",
+        fontWeight: "500"
     },
     smallTitleStyle: {
         fontSize: Dimens.font_14,
-        color: Colors.WHITE
+        color: Colors.WHITE,
+        fontFamily: "SFUIText-Regular",
+        fontWeight: "500"
     },
     smallDescStyle: {
         fontSize: Dimens.font_12,
-        color: Colors.WHITE
+        color: Colors.WHITE,
+        fontFamily: "SFUIText-Regular",
+        fontWeight: "500"
     },
     horizontalRoot: {
         flexDirection: 'row',
