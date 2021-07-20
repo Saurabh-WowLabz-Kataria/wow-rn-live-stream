@@ -272,9 +272,14 @@ PODS:
   - react-native-jitsi-meet (2.1.1):
     - JitsiMeetSDK (= 2.4.0)
     - React
+  - react-native-record-screen (0.3.2):
+    - React
   - react-native-safe-area-context (3.2.0):
     - React-Core
-  - react-native-wow-rn-live-stream (1.0.1):
+  - react-native-simple-toast (1.1.3):
+    - React-Core
+    - Toast (~> 4.0.0)
+  - react-native-wow-rn-live-stream (1.2.1):
     - React
   - React-RCTActionSheet (0.63.4):
     - React-Core/RCTActionSheetHeaders (= 0.63.4)
@@ -380,6 +385,7 @@ PODS:
     - Yoga
   - RNScreens (3.1.0):
     - React-Core
+  - Toast (4.0.0)
   - Yoga (1.14.0)
   - YogaKit (1.18.1):
     - Yoga (~> 1.14)
@@ -423,7 +429,9 @@ DEPENDENCIES:
   - React-jsiexecutor (from `../node_modules/react-native/ReactCommon/jsiexecutor`)
   - React-jsinspector (from `../node_modules/react-native/ReactCommon/jsinspector`)
   - react-native-jitsi-meet (from `../node_modules/react-native-jitsi-meet`)
+  - react-native-record-screen (from `../node_modules/react-native-record-screen`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
+  - react-native-simple-toast (from `../node_modules/react-native-simple-toast`)
   - react-native-wow-rn-live-stream (from `../..`)
   - React-RCTActionSheet (from `../node_modules/react-native/Libraries/ActionSheetIOS`)
   - React-RCTAnimation (from `../node_modules/react-native/Libraries/NativeAnimation`)
@@ -467,6 +475,7 @@ SPEC REPOS:
     - nanopb
     - OpenSSL-Universal
     - PromisesObjC
+    - Toast
     - YogaKit
 
 EXTERNAL SOURCES:
@@ -504,8 +513,12 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/jsinspector"
   react-native-jitsi-meet:
     :path: "../node_modules/react-native-jitsi-meet"
+  react-native-record-screen:
+    :path: "../node_modules/react-native-record-screen"
   react-native-safe-area-context:
     :path: "../node_modules/react-native-safe-area-context"
+  react-native-simple-toast:
+    :path: "../node_modules/react-native-simple-toast"
   react-native-wow-rn-live-stream:
     :path: "../.."
   React-RCTActionSheet:
@@ -584,8 +597,10 @@ SPEC CHECKSUMS:
   React-jsiexecutor: 93bd528844ad21dc07aab1c67cb10abae6df6949
   React-jsinspector: 58aef7155bc9a9683f5b60b35eccea8722a4f53a
   react-native-jitsi-meet: 29ed76cdc6142d9a6c013bb14dd6205df0b5452b
+  react-native-record-screen: 27388935c659e542768ac97c7c017d9b9baa7143
   react-native-safe-area-context: e471852c5ed67eea4b10c5d9d43c1cebae3b231d
-  react-native-wow-rn-live-stream: 61c5c4c1629ab46c27793009ab5e2d864d75fac5
+  react-native-simple-toast: b986e6c1befdc211af3df1bae293278a44e32990
+  react-native-wow-rn-live-stream: 355a3270126beaed85319d7164383b536d2ce686
   React-RCTActionSheet: 89a0ca9f4a06c1f93c26067af074ccdce0f40336
   React-RCTAnimation: 1bde3ecc0c104c55df246eda516e0deb03c4e49b
   React-RCTBlob: a97d378b527740cc667e03ebfa183a75231ab0f0
@@ -603,6 +618,7 @@ SPEC CHECKSUMS:
   RNGestureHandler: a479ebd5ed4221a810967000735517df0d2db211
   RNReanimated: 70f662b5232dd5d19ccff581e919a54ea73df51c
   RNScreens: 3ba2198ca3179f77f6158425fc31ba3c90a0d49f
+  Toast: 91b396c56ee72a5790816f40d3a94dd357abc196
   Yoga: 4bd86afe9883422a7c4028c00e34790f560923d6
   YogaKit: f782866e155069a2cca2517aafea43200b01fd5a
 

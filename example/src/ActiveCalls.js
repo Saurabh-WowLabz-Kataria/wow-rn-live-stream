@@ -4,7 +4,9 @@ import {
     Text,
     StyleSheet,
     FlatList,
-    Pressable
+    Pressable,
+    Dimensions,
+    StatusBar
 } from "react-native";
 import { ACTIVE_ROOMS_LIST, ITEM_SEPERATOR, ATTENDEE } from 'react-native-wow-rn-live-stream';
 import database from '@react-native-firebase/database';
@@ -14,7 +16,9 @@ class ActiveCalls extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            activeSessionsList: []
+            activeSessionsList: [],
+            stream: null,
+            publishers: [],
         }
     }
 
@@ -55,16 +59,18 @@ class ActiveCalls extends Component {
    */
     joinCall = (item) => {
         this.props.navigation.navigate('VideoCall', {
-            url: 'https://meet.jit.si/' + item.roomName,
+            url: 'https://jitsi.starbeat.com/' + item.roomName,
             user: ATTENDEE,
             userName: 'Sample User',
             email: 'example@email.com',
-            userImageUrl: 'https://picsum.photos/100'
+            userImageUrl: 'https://picsum.photos/100',
+            isPoll: true
         });
         // return true
     };
 
     render() {
+        console.log('Render');
         return (
             <View style={Styles.root}>
                 <FlatList

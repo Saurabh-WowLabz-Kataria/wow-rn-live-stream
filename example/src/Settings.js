@@ -17,7 +17,7 @@ class Setting extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            isPoll: false
+            isPoll: true
         }
     }
 
@@ -34,14 +34,16 @@ class Setting extends Component {
                 if (result['android.permission.RECORD_AUDIO']
                     && result['android.permission.CAMERA'] === 'granted') {
                     this.props.navigation.navigate('VideoCall', {
-                        url: 'https://meet.jit.si/somechanellWowishh',
+                        url: 'https://jitsi.starbeat.com/somechanellWowishh',
                         user: user,
                         userName: 'Sample User',
                         email: 'example@email.com',
                         userImageUrl: 'https://picsum.photos/100',
                         chatEnable: isChatEnable,
                         reactionsArr: selectedReactionsArr,
-                        isPoll: this.state.isPoll
+                        isPoll: this.state.isPoll,
+                        reAttempts: 2,
+                        initialTimeLimit: 20                        // In minutes
                     });
                 } else if (result['android.permission.RECORD_AUDIO']
                     || result['android.permission.CAMERA'] === 'never_ask_again') {

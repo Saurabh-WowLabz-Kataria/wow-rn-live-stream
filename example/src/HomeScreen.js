@@ -14,7 +14,7 @@ class HomeScreen extends Component {
     }
 
     componentDidMount() {
-        setBaseUrl("https://meet.jit.si/");
+        setBaseUrl("https://jitsi.starbeat.com/");
     }
 
     onStartVideoConferrencing() {
@@ -30,7 +30,7 @@ class HomeScreen extends Component {
 
     onJoinVideoConferrencing() {
         // this.props.navigation.navigate('VideoCall', {
-        //     url: 'https://meet.jit.si/somechanellWowishh',
+        //     url: 'https://jitsi.starbeat.com/somechanellWowishh',
         //     user: ATTENDEE,
         //     userName: 'Sample User',
         //     email: 'example@email.com',

@@ -95,7 +95,9 @@ class VideoCall extends Component {
                     answered: false,
                     correctAns: 'Yes'
                 }
-            ]
+            ],
+            winnersList: [],
+            resultForQues: {}
         }
     }
 
@@ -107,6 +109,43 @@ class VideoCall extends Component {
         console.log("Selected Value : ", value)
         console.log("Ans time : ", ansTime)
         // do something
+    }
+
+    getResultForQues(ques) {
+        let aQues = {}
+        aQues.correctAns = ques.correctAns
+        aQues.options = ques.options
+        aQues.title = ques.title
+        aQues.answered = true
+        this.setState({
+            resultForQues: aQues
+        })
+    }
+
+    getFinalResults() {
+        this.setState({
+            winnersList: [
+                {
+                    imgUrl: "https://i.picsum.photos/id/796/200/200.jpg?hmac=TabKFVb5_IyNIu3LHpgEW6YnI0AxHo3G6fyHubk1OY8",
+                    name: "Saurabh Kataria"
+                },
+                {
+                    imgUrl: "https://i.picsum.photos/id/237/200/300.jpg?hmac=TmmQSbShHz9CdQm0NkEjx1Dyh_Y984R9LpNrpvH2D_U",
+                    name: "Amit Tandon"
+                },
+                {
+                    imgUrl: "https://i.picsum.photos/id/777/200/300.jpg?grayscale&hmac=MW3suAB5fTnZAza_Ye4364HuNDxQrcrBosftHnhxfug",
+                    name: "Ghost Rider"
+                },
+                {
+                    imgUrl: "https://i.picsum.photos/id/780/200/300.jpg?blur=5&hmac=OFNZbP6X3yU1IcqmMqucFI4J2N_3dBPHfVMu-gAyP-Y",
+                    name: "Bruce Wayne"
+                },
+                {
+                    imgUrl: "https://i.picsum.photos/id/866/200/300.jpg?hmac=rcadCENKh4rD6MAp6V_ma-AyWv641M4iiOpe1RyFHeI",
+                    name: "SRK"
+                }]
+        })
     }
 
     render() {
@@ -136,6 +175,12 @@ class VideoCall extends Component {
                     chatEnable={this.props.route.params.chatEnable}
                     reactionsArr={this.props.route.params.reactionsArr}
                     isPoll={this.props.route.params.isPoll}
+                    reAttempts={this.props.route.params.reAttempts}
+                    initialTimeLimit={this.props.route.params.initialTimeLimit}
+                    getResultForQues={this.getResultForQues.bind(this)}                      // Callback used in polls to get the result of a particular ques
+                    resultForQues={this.state.resultForQues}
+                    getFinalResults={this.getFinalResults.bind(this)}
+                    winnersList={this.state.winnersList}                             // Send the result to the SDK
                 />
 
             </View>
