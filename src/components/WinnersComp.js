@@ -6,7 +6,7 @@ import {
     FlatList,
     StyleSheet,
     Pressable,
-    Dimensions
+    ImageBackground
 } from "react-native";
 import Colors from '../utils/Colors'
 import Dimens from '../utils/Dimens'
@@ -17,10 +17,17 @@ class WinnersComp extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            winnersList: props.winnersList
+            winnersList: []
         }
     }
 
+    componentDidUpdate(prevProps, prevState) {
+        if (this.props.winnersList != prevState.winnersList) {
+            this.setState({
+                winnersList: this.props.winnersList
+            })
+        }
+    }
     /**
     * Method that returns the item component for options list
     * 
@@ -30,16 +37,20 @@ class WinnersComp extends Component {
         return (
             <View
                 style={Styles.winnerCardStyle}>
-                <View
-                    style={Styles.winnersSubRootBorder}>
-                    <Image
-                        style={Styles.profileImage}
-                        source={{ uri: item.imgUrl }} />
-                    <Text
-                        style={[Styles.winnersTextStyle]}>
-                        {item.name}
-                    </Text>
-                </View>
+                <ImageBackground
+                    source={require('../../assets/images/confetti.png')}
+                    style={Styles.imageBackground}>
+                    <View
+                        style={Styles.winnersSubRootBorder}>
+                        <Image
+                            style={Styles.profileImage}
+                            source={{ uri: item.imgUrl }} />
+                        <Text
+                            style={[Styles.winnersTextStyle]}>
+                            {item.name}
+                        </Text>
+                    </View>
+                </ImageBackground>
             </View>
         )
     }
@@ -50,6 +61,7 @@ class WinnersComp extends Component {
 
     render() {
         const { isVisible } = this.props
+        console.log("Winners List in Comp: ", this.state.winnersList)
         return (
             <Modal
                 visible={isVisible}
@@ -64,7 +76,8 @@ class WinnersComp extends Component {
                             style={Styles.subRoot}
                             onPress={this.onCloseWinnersList.bind(this)}>
                             <Image
-                                source={require('../../assets/images/close.png')} />
+                                source={require('../../assets/images/close.png')}
+                                style={Styles.imageStyle} />
                         </Pressable>
                         <Text
                             style={[Styles.titleStyle]}>
@@ -99,7 +112,9 @@ const Styles = StyleSheet.create({
         fontSize: Dimens.font_24,
         color: Colors.POLL_TEXT_COLOR,
         alignSelf: 'center',
-        textAlign: 'center'
+        textAlign: 'center',
+        fontFamily: "SFUIText-Regular",
+        fontWeight: "500"
     },
     flatlistStyle: {
         marginTop: Dimens.dimen_16,
@@ -112,24 +127,33 @@ const Styles = StyleSheet.create({
         backgroundColor: Colors.WHITE,
         borderRadius: Dimens.dimen_4,
         margin: Dimens.dimen_8,
-        alignItems: 'center',
-        justifyContent: 'center'
+        // alignItems: 'center',
+        // justifyContent: 'center'
     },
     winnersTextStyle: {
         fontSize: Dimens.font_20,
         color: Colors.POLL_TEXT_COLOR,
-        marginHorizontal: Dimens.dimen_8
+        marginHorizontal: Dimens.dimen_8,
+        fontFamily: "SFUIText-Regular",
+        fontWeight: "500"
     },
     winnersSubRootBorder: {
         flex: 1,
         alignItems: 'center',
         alignSelf: 'stretch',
         padding: Dimens.dimen_8,
-        margin: Dimens.dimen_4,
+        // margin: Dimens.dimen_4,
         borderColor: Colors.APP_BLUE,
         borderWidth: Dimens.dimen_2,
         borderRadius: Dimens.dimen_4,
         flexDirection: 'row'
+    },
+    imageStyle: {
+        padding: Dimens.dimen_4
+    },
+    imageBackground: {
+        flex: 1,
+        margin: Dimens.dimen_4
     },
 })
 export default WinnersComp;

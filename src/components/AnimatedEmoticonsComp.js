@@ -45,21 +45,23 @@ class AnimatedEmoticonsComp extends Component {
 
   updateEmojiArray() {
     const { deltaReactions } = this.props
-    let aTempArr = []
-    for (const element of Object.keys(deltaReactions)) {
-      if (deltaReactions[element] > 0) {
-        for (let i = 0; i < deltaReactions[element]; i++) {
-          aTempArr.push(element)
+    if (deltaReactions) {
+      let aTempArr = []
+      for (const element of Object.keys(deltaReactions)) {
+        if (deltaReactions[element] > 0) {
+          for (let i = 0; i < deltaReactions[element]; i++) {
+            aTempArr.push(element)
+          }
         }
       }
+      this.setState({
+        reactionsArr: aTempArr
+      }, () => {
+        for (let i = 0; i < this.state.reactionsArr.length; i++) {
+          this.generateEmoji();
+        }
+      })
     }
-    this.setState({
-      reactionsArr: aTempArr
-    }, () => {
-      for (let i = 0; i < this.state.reactionsArr.length; i++) {
-        this.generateEmoji();
-      }
-    })
   }
 
   /**
