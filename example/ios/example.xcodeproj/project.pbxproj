@@ -15,6 +15,7 @@
 		4E94CB2C2629ABEC00C76773 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 4E94CB2B2629ABEC00C76773 /* GoogleService-Info.plist */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		CDC314BC088CA067532258F3 /* libPods-example-exampleTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 16682AADA5FE651A99F97932 /* libPods-example-exampleTests.a */; };
+		3174D70D5F024F46B594223F /* SFUIText-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E595A182EAF04135B58C6E01 /* SFUIText-Regular.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -46,6 +47,7 @@
 		D534EE89E8780B0000EDF18B /* Pods-example-exampleTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-example-exampleTests.debug.xcconfig"; path = "Target Support Files/Pods-example-exampleTests/Pods-example-exampleTests.debug.xcconfig"; sourceTree = "<group>"; };
 		DDC505A03588903DC724658A /* Pods-example.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-example.debug.xcconfig"; path = "Target Support Files/Pods-example/Pods-example.debug.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
+		E595A182EAF04135B58C6E01 /* SFUIText-Regular.ttf */ = {isa = PBXFileReference; name = "SFUIText-Regular.ttf"; path = "../../assets/fonts/SFUIText-Regular.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -125,6 +127,7 @@
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
 				8C08841BCDC6210AAE2F76F5 /* Pods */,
+				50D8A86E422C42D48B428234 /* Resources */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -150,6 +153,15 @@
 			);
 			path = Pods;
 			sourceTree = "<group>";
+		};
+		50D8A86E422C42D48B428234 /* Resources */ = {
+			isa = "PBXGroup";
+			children = (
+				E595A182EAF04135B58C6E01 /* SFUIText-Regular.ttf */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+			path = "";
 		};
 /* End PBXGroup section */
 
@@ -249,6 +261,7 @@
 				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				4E94CB2C2629ABEC00C76773 /* GoogleService-Info.plist in Resources */,
+				3174D70D5F024F46B594223F /* SFUIText-Regular.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
